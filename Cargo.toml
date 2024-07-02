@@ -1,0 +1,19 @@
+[package]
+name = "charbs"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+name = "charbs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+winit = "0.30.3"
+
+[[example]]
+name = "state_scheduler_init"
+path = "examples/state/init.rs"
+
+[[example]]
+name = "state_scheduler_loop"
+path = "examples/state/loop.rs"

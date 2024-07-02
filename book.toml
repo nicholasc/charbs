@@ -1,0 +1,6 @@
+[book]
+title = "charbs"
+authors = ["Nicholas Charbonneau"]
+language = "en"
+multilingual = false
+src = "docs"
