@@ -2,6 +2,7 @@ use std::{
   any::{Any, TypeId},
   cell::{Ref, RefCell, RefMut},
   collections::HashMap,
+  hash::Hash,
   marker::PhantomData,
   ops::{Deref, DerefMut},
 };
@@ -248,41 +249,22 @@ impl<'res, T: 'static> HandlerParam for ResMut<'res, T> {
 /// A struct that allows the definition of specific [`Handler`]s to be executed
 /// with dynamically injected resources.
 #[derive(Default)]
-pub struct Scheduler {
-  handlers: Vec<Box<dyn Handler>>,
-  init_handlers: Vec<Box<dyn Handler>>,
+pub struct Scheduler<T: Eq + Hash> {
+  handlers: HashMap<T, Box<dyn Handler>>,
 }
 
-impl Scheduler {
-  /// Executes all init timed [`Handler`]s that have been added to the
-  /// [`Scheduler`] and allow them to use specific resources.
-  ///
-  /// # Arguments
-  ///
-  /// * `state` - A mutable reference to a [`State`].
-  pub fn run_init(&mut self, state: &mut State) {
-    let resources = state.all_mut();
-
-    // Run the init functions in reverse order.
-    for handler in self.init_handlers.iter_mut().rev() {
-      handler.run(resources);
-    }
-
-    // Dispose of init handlers once runned
-    self.init_handlers.clear();
-  }
-
+impl<T: Eq + Hash> Scheduler<T> {
   /// Executes all [`Handler`]s that have been added to the [`Scheduler`] and
   /// allow them to use specific resources.
   ///
   /// # Arguments
   ///
   /// * `state` - A mutable reference to a [`State`].
-  pub fn run(&mut self, state: &mut State) {
+  pub fn run(&mut self, schedule: T, state: &mut State) {
     let resources = state.all_mut();
 
     // Run the handlers in order.
-    for handler in self.handlers.iter_mut() {
+    for handler in self.handlers.get(&schedule).iter_mut() {
       handler.run(resources);
     }
   }
@@ -294,9 +276,12 @@ impl Scheduler {
   /// * `handler` - The [`Handler`] to be added.
   pub fn add_handler<I, S: Handler + 'static>(
     &mut self,
+    schedule: T,
     handler: impl IntoHandler<I, Handler = S>,
   ) {
-    self.handlers.push(Box::new(handler.into_handler()));
+    self
+      .handlers
+      .insert(schedule, Box::new(handler.into_handler()));
   }
 
   /// Adds a new init timed [`Handler`] to the [`Scheduler`].
