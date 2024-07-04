@@ -7,9 +7,9 @@ use winit::{
   window::{Window, WindowAttributes},
 };
 
-use crate::state::{Res, Scheduler, State};
+use crate::state::{Res, State};
 
-struct AppEvents {}
+enum AppEvents {}
 
 /// A structure representing an application.
 ///
@@ -17,14 +17,14 @@ struct AppEvents {}
 /// [`Window`] and [`EventLoop`].
 pub struct App {
   state: State,
-  scheduler: Scheduler,
+  // scheduler: Scheduler<AppEvents>,
 }
 
 impl App {
   pub fn new() -> Self {
     Self {
       state: State::default(),
-      scheduler: Scheduler::default(),
+      // scheduler: Scheduler::<AppEvents>::default(),
     }
   }
 
@@ -42,10 +42,6 @@ impl App {
     event_loop.set_control_flow(ControlFlow::Poll);
     event_loop.run_app(&mut self).map_err(Into::into)
   }
-
-  pub fn scheduler_mut(&mut self) -> &mut Scheduler {
-    &mut self.scheduler
-  }
 }
 
 impl ApplicationHandler<AppEvents> for App {
@@ -60,7 +56,7 @@ impl ApplicationHandler<AppEvents> for App {
     self.state.add(window);
 
     // Initialize the scheduler effectively calling all init runtimes
-    self.scheduler.run_init(&mut self.state);
+    // self.scheduler.run(AppEvents::Initialize, &mut self.state);
   }
 
   fn window_event(
@@ -69,7 +65,9 @@ impl ApplicationHandler<AppEvents> for App {
     _window_id: winit::window::WindowId,
     event: winit::event::WindowEvent,
   ) {
-    let Self { scheduler, state } = self;
+    let Self {
+      /*scheduler,*/ state,
+    } = self;
 
     match event {
       WindowEvent::CloseRequested => {
@@ -78,7 +76,7 @@ impl ApplicationHandler<AppEvents> for App {
       }
       WindowEvent::RedrawRequested => {
         // Run the scheduler update runtimes
-        scheduler.run(state);
+        // scheduler.run(AppEvents::Update, state);
 
         // Immediately request the next frame
         state.get::<Res<Arc<Window>>>().request_redraw();

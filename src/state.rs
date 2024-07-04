@@ -2,10 +2,11 @@ use std::{
   any::{Any, TypeId},
   cell::{Ref, RefCell, RefMut},
   collections::HashMap,
-  hash::Hash,
   marker::PhantomData,
   ops::{Deref, DerefMut},
 };
+
+pub use charbs_macros::ScheduleLabel;
 
 /// A container structure that assembles generic resources to compose a state.
 ///
@@ -246,25 +247,35 @@ impl<'res, T: 'static> HandlerParam for ResMut<'res, T> {
   }
 }
 
+// pub struct Test {
+//   test: u32,
+// }
+
+// impl Hash for Test {
+//   fn hash<H: Hasher>(&self, state: &mut H) {
+//     self.test.hash(state);
+//   }
+// }
+
 /// A struct that allows the definition of specific [`Handler`]s to be executed
 /// with dynamically injected resources.
 #[derive(Default)]
-pub struct Scheduler<T: Eq + Hash> {
-  handlers: HashMap<T, Box<dyn Handler>>,
+pub struct Schedule {
+  handlers: Vec<Box<dyn Handler>>,
 }
 
-impl<T: Eq + Hash> Scheduler<T> {
+impl Schedule {
   /// Executes all [`Handler`]s that have been added to the [`Scheduler`] and
   /// allow them to use specific resources.
   ///
   /// # Arguments
   ///
   /// * `state` - A mutable reference to a [`State`].
-  pub fn run(&mut self, schedule: T, state: &mut State) {
+  pub fn run(&mut self, state: &mut State) {
     let resources = state.all_mut();
 
     // Run the handlers in order.
-    for handler in self.handlers.get(&schedule).iter_mut() {
+    for handler in self.handlers.iter_mut() {
       handler.run(resources);
     }
   }
@@ -276,23 +287,49 @@ impl<T: Eq + Hash> Scheduler<T> {
   /// * `handler` - The [`Handler`] to be added.
   pub fn add_handler<I, S: Handler + 'static>(
     &mut self,
-    schedule: T,
     handler: impl IntoHandler<I, Handler = S>,
   ) {
-    self
-      .handlers
-      .insert(schedule, Box::new(handler.into_handler()));
+    self.handlers.push(Box::new(handler.into_handler()));
+  }
+}
+
+pub trait ScheduleLabel {}
+
+#[derive(Default)]
+pub struct Scheduler {
+  schedules: HashMap<TypeId, Schedule>,
+}
+
+impl Scheduler {
+  pub fn run<R: ScheduleLabel + 'static>(&mut self, _: R, state: &mut State) {
+    let key = TypeId::of::<R>();
+
+    if let Some(schedule) = self.schedules.get_mut(&key) {
+      schedule.run(state);
+    }
   }
 
-  /// Adds a new init timed [`Handler`] to the [`Scheduler`].
-  ///
-  /// # Arguments
-  ///
-  /// * `handler` - The init timed [`Handler`] to be added.
-  pub fn add_init_handler<I, S: Handler + 'static>(
+  // _ var needs to be there to prevent having to specify I & S for handler
+  pub fn add_handler<R: ScheduleLabel + 'static, I, S: Handler + 'static>(
     &mut self,
+    _: R,
     handler: impl IntoHandler<I, Handler = S>,
   ) {
-    self.init_handlers.push(Box::new(handler.into_handler()));
+    let key = TypeId::of::<R>();
+
+    if let Some(schedule) = self.schedules.get_mut(&key) {
+      schedule.add_handler(handler);
+    } else {
+      let mut schedule = Schedule::default();
+      schedule.add_handler(handler);
+
+      self.schedules.insert(key, schedule);
+    }
+  }
+
+  pub fn get_mut<R: ScheduleLabel + 'static>(&mut self, _: &R) -> Option<&mut Schedule> {
+    let key = TypeId::of::<R>();
+
+    self.schedules.get_mut(&key)
   }
 }

@@ -9,6 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 winit = "0.30.3"
+charbs_macros = { path = "macros" }
 
 [[example]]
 name = "state_scheduler_init"
