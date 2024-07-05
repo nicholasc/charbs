@@ -4,6 +4,7 @@ use std::{
   collections::HashMap,
   marker::PhantomData,
   ops::{Deref, DerefMut},
+  sync::{Arc, Mutex},
 };
 
 pub use charbs_macros::ScheduleLabel;
@@ -46,12 +47,14 @@ impl State {
     R::retrieve(&self.resources)
   }
 
-  /// Returns a read-only reference to all the resources within the state container.
+  /// Returns a read-only reference to all the resources within the state
+  /// container.
   pub fn all(&self) -> &HashMap<TypeId, RefCell<Box<dyn Any>>> {
     &self.resources
   }
 
-  /// Returns a mutable reference to all the resources within the state container.
+  /// Returns a mutable reference to all the resources within the state
+  /// container.
   pub fn all_mut(&mut self) -> &mut HashMap<TypeId, RefCell<Box<dyn Any>>> {
     &mut self.resources
   }
@@ -87,8 +90,8 @@ pub trait HandlerParam {
   fn retrieve(resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_>;
 }
 
-/// A structure representing the actual handler function that will be executed with
-/// injected resources.
+/// A structure representing the actual handler function that will be executed
+/// with injected resources.
 pub struct HandlerFunction<Input, F> {
   f: F,
   marker: PhantomData<fn() -> Input>,
@@ -247,16 +250,6 @@ impl<'res, T: 'static> HandlerParam for ResMut<'res, T> {
   }
 }
 
-// pub struct Test {
-//   test: u32,
-// }
-
-// impl Hash for Test {
-//   fn hash<H: Hasher>(&self, state: &mut H) {
-//     self.test.hash(state);
-//   }
-// }
-
 /// A struct that allows the definition of specific [`Handler`]s to be executed
 /// with dynamically injected resources.
 #[derive(Default)]
@@ -265,8 +258,8 @@ pub struct Schedule {
 }
 
 impl Schedule {
-  /// Executes all [`Handler`]s that have been added to the [`Scheduler`] and
-  /// allow them to use specific resources.
+  /// Executes all [`Handler`]s within this [`Schedule`] and allow them to
+  /// access to a [`State`]'s resources.
   ///
   /// # Arguments
   ///
@@ -280,7 +273,7 @@ impl Schedule {
     }
   }
 
-  /// Adds a new [`Handler`] to the [`Scheduler`].
+  /// Adds a new [`Handler`] to the [`Schedule`].
   ///
   /// # Arguments
   ///
@@ -293,6 +286,7 @@ impl Schedule {
   }
 }
 
+///
 pub trait ScheduleLabel {}
 
 #[derive(Default)]
@@ -301,7 +295,15 @@ pub struct Scheduler {
 }
 
 impl Scheduler {
-  pub fn run<R: ScheduleLabel + 'static>(&mut self, _: R, state: &mut State) {
+  /// Executes a [`Schedule`] with a specific label and [`State`].
+  ///
+  /// # Arguments
+  ///
+  /// * `label` - The label of the [`Schedule`] to be executed.
+  /// * `state` - A mutable reference to a [`State`] for the [`Schedule`]
+  ///   handlers.
+  #[allow(unused_variables)]
+  pub fn run<R: ScheduleLabel + 'static>(&mut self, label: R, state: &mut State) {
     let key = TypeId::of::<R>();
 
     if let Some(schedule) = self.schedules.get_mut(&key) {
