@@ -10,12 +10,12 @@ pub use charbs_macros::ScheduleLabel;
 
 /// A container structure that assembles generic resources to compose a state.
 ///
-/// Resources can be virtually anything needed to be stored as part of the
-/// state of a larger structure.
+/// Resources can be virtually anything that a structure needs to store as part
+/// of the state of a larger structure.
 ///
 /// This is intended to be used in conjunction with a [`Scheduler`] as input
-/// for the dependencies its handlers require. Together they allow the creation
-/// of complex and independent systems that can easily co-exist.
+/// for the dependencies its schedule' handlers require. Together they allow
+/// the creation of complex and independent systems that can easily co-exist.
 #[derive(Default)]
 pub struct State {
   resources: HashMap<TypeId, RefCell<Box<dyn Any>>>,
@@ -247,26 +247,24 @@ impl<'res, T: 'static> HandlerParam for ResMut<'res, T> {
   }
 }
 
-// pub struct Test {
-//   test: u32,
-// }
-
-// impl Hash for Test {
-//   fn hash<H: Hasher>(&self, state: &mut H) {
-//     self.test.hash(state);
-//   }
-// }
-
-/// A struct that allows the definition of specific [`Handler`]s to be executed
+/// A structure that allows the storage of [`Handler`] functions to be executed
 /// with dynamically injected resources.
+///
+/// This is intended to be used in conjunction with a [`Scheduler`] as a
+/// mechanism to execute specific functions ([`Handler`]s) at the specific
+/// moment.
+///
+/// [`Schedule`]s are agnostic of the [`State`] used to execute the [`Handler`]
+/// functions. This is why any function that executes a [`Handler`]s will
+/// require a [`State`] to be specified.
 #[derive(Default)]
-pub struct Schedule {
+pub(crate) struct Schedule {
   handlers: Vec<Box<dyn Handler>>,
 }
 
 impl Schedule {
-  /// Executes all [`Handler`]s that have been added to the [`Scheduler`] and
-  /// allow them to use specific resources.
+  /// Executes all [`Handler`]s that have been added to the [`Schedule`] and
+  /// allow them to use specific resources from a [`State`].
   ///
   /// # Arguments
   ///
@@ -280,7 +278,7 @@ impl Schedule {
     }
   }
 
-  /// Adds a new [`Handler`] to the [`Scheduler`].
+  /// Adds a new [`Handler`] to the [`Schedule`].
   ///
   /// # Arguments
   ///
@@ -293,15 +291,32 @@ impl Schedule {
   }
 }
 
+/// A trait used for defining labels for [`Schedule`]s.
+///
+/// This trait is mainly used by the [`ScheduleLabel`] macro to help quickly create
+/// scheduling labels.
 pub trait ScheduleLabel {}
 
+/// A structure used for creating different [`Schedule`]s with [`Handler`]s
+/// effectively allowing for a system to be executed in a real-time manner.
 #[derive(Default)]
 pub struct Scheduler {
   schedules: HashMap<TypeId, Schedule>,
 }
 
 impl Scheduler {
-  pub fn run<R: ScheduleLabel + 'static>(&mut self, _: R, state: &mut State) {
+  /// Executes a [`Schedule`] with a specific [`State`] based on the given
+  /// [`ScheduleLabel`].
+  ///
+  /// The label parameter exists for consistency with the
+  /// [`Scheduler::add_handler`] method.
+  ///
+  /// # Arguments
+  ///
+  /// * `label` - The label used to find the [`Schedule`] which will be executed.
+  /// * `state` - The [`State`] to be used by the [`Schedule`]s.
+  #[allow(unused_variables)]
+  pub fn run<R: ScheduleLabel + 'static>(&mut self, label: R, state: &mut State) {
     let key = TypeId::of::<R>();
 
     if let Some(schedule) = self.schedules.get_mut(&key) {
@@ -309,10 +324,22 @@ impl Scheduler {
     }
   }
 
-  // _ var needs to be there to prevent having to specify I & S for handler
+  /// Adds a [`Handler`] ƒunction to the specified [`Schedule`] using a
+  /// [`ScheduleLabel`].
+  ///
+  /// The label parameter exists because it cannot live as a template generic.
+  /// That would require having to specify I & S for [`Handler`] functions
+  /// which is not doable.
+  ///
+  /// # Arguments
+  ///
+  /// * `label` - The label used to find the [`Schedule`] onto which the
+  ///   handler should be added.
+  /// * `handler` - The handler to be added to the [`Schedule`].
+  #[allow(unused_variables)]
   pub fn add_handler<R: ScheduleLabel + 'static, I, S: Handler + 'static>(
     &mut self,
-    _: R,
+    label: R,
     handler: impl IntoHandler<I, Handler = S>,
   ) {
     let key = TypeId::of::<R>();
@@ -325,11 +352,5 @@ impl Scheduler {
 
       self.schedules.insert(key, schedule);
     }
-  }
-
-  pub fn get_mut<R: ScheduleLabel + 'static>(&mut self, _: &R) -> Option<&mut Schedule> {
-    let key = TypeId::of::<R>();
-
-    self.schedules.get_mut(&key)
   }
 }
