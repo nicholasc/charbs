@@ -12,9 +12,5 @@ winit = "0.30.3"
 charbs_macros = { path = "macros" }
 
 [[example]]
-name = "state_scheduler_init"
-path = "examples/state/init.rs"
-
-[[example]]
-name = "state_scheduler_loop"
-path = "examples/state/loop.rs"
+name = "state_basic"
+path = "examples/state/basic.rs"
