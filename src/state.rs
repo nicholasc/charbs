@@ -46,12 +46,14 @@ impl State {
     R::retrieve(&self.resources)
   }
 
-  /// Returns a read-only reference to all the resources within the state container.
+  /// Returns a read-only reference to all the resources within the state
+  /// container.
   pub fn all(&self) -> &HashMap<TypeId, RefCell<Box<dyn Any>>> {
     &self.resources
   }
 
-  /// Returns a mutable reference to all the resources within the state container.
+  /// Returns a mutable reference to all the resources within the state
+  /// container.
   pub fn all_mut(&mut self) -> &mut HashMap<TypeId, RefCell<Box<dyn Any>>> {
     &mut self.resources
   }
@@ -87,8 +89,8 @@ pub trait HandlerParam {
   fn retrieve(resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_>;
 }
 
-/// A structure representing the actual handler function that will be executed with
-/// injected resources.
+/// A structure representing the actual handler function that will be executed
+/// with injected resources.
 pub struct HandlerFunction<Input, F> {
   f: F,
   marker: PhantomData<fn() -> Input>,
