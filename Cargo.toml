@@ -14,3 +14,7 @@ charbs_macros = { path = "macros" }
 [[example]]
 name = "state_basic"
 path = "examples/state/basic.rs"
+
+[[example]]
+name = "app_window"
+path = "examples/app/window.rs"

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use winit::{
   application::ApplicationHandler,
   event::WindowEvent,
@@ -7,27 +5,29 @@ use winit::{
   window::{Window, WindowAttributes},
 };
 
-use crate::state::{Res, State};
+use crate::state::{Res, ScheduleLabel, Scheduler, State};
 
 enum AppEvents {}
+
+/// A schedule label that represents the application initialization schedule.
+#[derive(ScheduleLabel)]
+pub struct Init;
+
+/// A schedule label that represents the application update schedule.
+#[derive(ScheduleLabel)]
+pub struct Update;
 
 /// A structure representing an application.
 ///
 /// This encapsulates all convenience wrappers around wgpu as well as a winit
 /// [`Window`] and [`EventLoop`].
+#[derive(Default)]
 pub struct App {
   state: State,
-  // scheduler: Scheduler<AppEvents>,
+  scheduler: Scheduler,
 }
 
 impl App {
-  pub fn new() -> Self {
-    Self {
-      state: State::default(),
-      // scheduler: Scheduler::<AppEvents>::default(),
-    }
-  }
-
   /// Create and start the application loop.
   ///
   /// This method takes ownership of the application so everything must happen
@@ -42,21 +42,36 @@ impl App {
     event_loop.set_control_flow(ControlFlow::Poll);
     event_loop.run_app(&mut self).map_err(Into::into)
   }
+
+  pub fn state(&self) -> &State {
+    &self.state
+  }
+
+  pub fn state_mut(&mut self) -> &mut State {
+    &mut self.state
+  }
+
+  pub fn scheduler(&self) -> &Scheduler {
+    &self.scheduler
+  }
+
+  pub fn scheduler_mut(&mut self) -> &mut Scheduler {
+    &mut self.scheduler
+  }
 }
 
 impl ApplicationHandler<AppEvents> for App {
   fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
     // Create the application window
-    let window = Arc::new(
-      event_loop
-        .create_window(WindowAttributes::default())
-        .expect("Failed to create window"),
-    );
+    let window = event_loop
+      .create_window(WindowAttributes::default())
+      .expect("Failed to create window");
 
+    // Store window within the application state
     self.state.add(window);
 
-    // Initialize the scheduler effectively calling all init runtimes
-    // self.scheduler.run(AppEvents::Initialize, &mut self.state);
+    // Initialize the application by calling the init schedule
+    self.scheduler.run(Init, &mut self.state);
   }
 
   fn window_event(
@@ -65,9 +80,7 @@ impl ApplicationHandler<AppEvents> for App {
     _window_id: winit::window::WindowId,
     event: winit::event::WindowEvent,
   ) {
-    let Self {
-      /*scheduler,*/ state,
-    } = self;
+    let Self { scheduler, state } = self;
 
     match event {
       WindowEvent::CloseRequested => {
@@ -76,10 +89,10 @@ impl ApplicationHandler<AppEvents> for App {
       }
       WindowEvent::RedrawRequested => {
         // Run the scheduler update runtimes
-        // scheduler.run(AppEvents::Update, state);
+        scheduler.run(Update, state);
 
         // Immediately request the next frame
-        state.get::<Res<Arc<Window>>>().request_redraw();
+        state.get::<Res<Window>>().request_redraw();
       }
       _ => (),
     }
