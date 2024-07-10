@@ -17,6 +17,6 @@ unstable_features = true
 version = "Two"
 
 # Wrap comments
-comment_width = 90
+comment_width = 80
 wrap_comments = true
 normalize_comments = true
