@@ -1,4 +1,4 @@
-use charbs::state::{Res, ScheduleLabel, Scheduler, State};
+use charbs::prelude::*;
 
 #[derive(ScheduleLabel)]
 pub struct Init;

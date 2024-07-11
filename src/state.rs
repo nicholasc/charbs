@@ -295,8 +295,8 @@ impl Schedule {
 
 /// A trait used for defining labels for [`Schedule`]s.
 ///
-/// This trait is mainly used by the [`ScheduleLabel`] macro to help quickly create
-/// scheduling labels.
+/// This trait is mainly used by the [`ScheduleLabel`] macro to help quickly
+/// create scheduling labels.
 pub trait ScheduleLabel {}
 
 /// A structure used for creating different [`Schedule`]s with [`Handler`]s
@@ -315,7 +315,8 @@ impl Scheduler {
   ///
   /// # Arguments
   ///
-  /// * `label` - The label used to find the [`Schedule`] which will be executed.
+  /// * `label` - The label used to find the [`Schedule`] which will be
+  ///   executed.
   /// * `state` - The [`State`] to be used by the [`Schedule`]s.
   #[allow(unused_variables)]
   pub fn run<R: ScheduleLabel + 'static>(&mut self, label: R, state: &mut State) {
@@ -335,8 +336,8 @@ impl Scheduler {
   ///
   /// # Arguments
   ///
-  /// * `label` - The label used to find the [`Schedule`] onto which the
-  ///   handler should be added.
+  /// * `label` - The label used to find the [`Schedule`] onto which the handler
+  ///   should be added.
   /// * `handler` - The handler to be added to the [`Schedule`].
   #[allow(unused_variables)]
   pub fn add_handler<R: ScheduleLabel + 'static, I, S: Handler + 'static>(
