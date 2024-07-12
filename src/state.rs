@@ -1,3 +1,5 @@
+pub use charbs_macros::ScheduleLabel;
+
 use std::{
   any::{Any, TypeId},
   cell::{Ref, RefCell, RefMut},
@@ -5,8 +7,6 @@ use std::{
   marker::PhantomData,
   ops::{Deref, DerefMut},
 };
-
-pub use charbs_macros::ScheduleLabel;
 
 /// A container structure that assembles generic resources to compose a state.
 ///
@@ -42,7 +42,9 @@ impl State {
   /// # Arguments
   ///
   /// * `->` - A read-only or mutable reference to the requested resource.
-  pub fn get<R: HandlerParam + 'static>(&self) -> <R as HandlerParam>::Item<'_> {
+  pub fn get<R: HandlerParam + 'static>(
+    &self,
+  ) -> <R as HandlerParam>::Item<'_> {
     R::retrieve(&self.resources)
   }
 
@@ -86,7 +88,9 @@ pub trait HandlerParam {
   ///
   /// * `resources` - A reference to the injectable resources instance.
   /// * `->` - A reference to the injectable resource.
-  fn retrieve(resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_>;
+  fn retrieve(
+    resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>,
+  ) -> Self::Item<'_>;
 }
 
 /// A structure representing the actual handler function that will be executed
@@ -204,7 +208,9 @@ impl<'res, T: 'static> HandlerParam for Res<'res, T> {
   /// Provides a copy of the struct with a new lifetime.
   type Item<'new> = Res<'new, T>;
 
-  fn retrieve(resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_> {
+  fn retrieve(
+    resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>,
+  ) -> Self::Item<'_> {
     Res {
       value: resources
         .get(&TypeId::of::<T>())
@@ -241,7 +247,9 @@ impl<'res, T: 'static> HandlerParam for ResMut<'res, T> {
   /// Provides a copy of the struct with a new lifetime.
   type Item<'new> = ResMut<'new, T>;
 
-  fn retrieve(resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_> {
+  fn retrieve(
+    resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>,
+  ) -> Self::Item<'_> {
     ResMut {
       value: resources.get(&TypeId::of::<T>()).unwrap().borrow_mut(),
       _marker: PhantomData,
@@ -319,7 +327,11 @@ impl Scheduler {
   ///   executed.
   /// * `state` - The [`State`] to be used by the [`Schedule`]s.
   #[allow(unused_variables)]
-  pub fn run<R: ScheduleLabel + 'static>(&mut self, label: R, state: &mut State) {
+  pub fn run<R: ScheduleLabel + 'static>(
+    &mut self,
+    label: R,
+    state: &mut State,
+  ) {
     let key = TypeId::of::<R>();
 
     if let Some(schedule) = self.schedules.get_mut(&key) {

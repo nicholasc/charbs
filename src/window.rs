@@ -1,3 +1,8 @@
+use crate::{
+  app::{App, Module, Update},
+  state::ResMut,
+};
+
 use std::time::Duration;
 
 use winit::{
@@ -8,12 +13,7 @@ use winit::{
   window::{Window, WindowAttributes},
 };
 
-use crate::{
-  app::{App, Update},
-  modules::Module,
-  state::ResMut,
-};
-
+/// A module that manages a winit window.
 pub struct WindowModule;
 
 impl Module for WindowModule {
@@ -26,6 +26,12 @@ impl Module for WindowModule {
 }
 
 impl WindowModule {
+  /// An update function that handles pumping of application events.
+  ///
+  /// # Arguments
+  ///
+  /// * `event_loop` - A mutable reference to the winit [`EventLoop`].
+  /// * `app` - A mutable reference to the [`WindowApp`].
   fn update(mut event_loop: ResMut<EventLoop<()>>, mut app: ResMut<WindowApp>) {
     let status = event_loop.pump_app_events(Some(Duration::ZERO), &mut *app);
 
@@ -35,6 +41,7 @@ impl WindowModule {
   }
 }
 
+/// A winit application that manages a window.
 #[derive(Default)]
 pub struct WindowApp {
   window: Option<Window>,
