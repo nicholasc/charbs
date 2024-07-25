@@ -10,6 +10,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 winit = "0.30.3"
 charbs_macros = { path = "macros" }
+bytemuck = { version = "1.16.1", features = ["derive"] }
+wgpu = "22.0.0"
 
 [[example]]
 name = "state_basic"
