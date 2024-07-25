@@ -1,5 +1,7 @@
 pub mod app;
-pub mod buffers;
+pub mod binding;
+pub mod buffer;
 pub mod prelude;
+pub mod renderer;
 pub mod state;
 pub mod window;

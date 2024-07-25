@@ -1,4 +1,5 @@
 use bytemuck::Pod;
+
 use wgpu::util::DeviceExt;
 
 /// A structure to encapsulate a [`wgpu::Buffer`].
