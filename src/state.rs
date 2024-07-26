@@ -16,7 +16,7 @@ use std::{
 /// This is intended to be used in conjunction with a [`Scheduler`] as input
 /// for the dependencies its schedule' handlers require. Together they allow
 /// the creation of complex and independent systems that can easily co-exist.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct State {
   resources: HashMap<TypeId, RefCell<Box<dyn Any>>>,
 }

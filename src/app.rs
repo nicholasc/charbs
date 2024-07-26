@@ -10,27 +10,60 @@ pub struct Init;
 #[derive(ScheduleLabel)]
 pub struct Update;
 
+/// A type alias for a function that takes an application and runs it.
+type RunnerFn = fn(App);
+
+/// A default runner function that initializes the application and runs it in a
+/// loop.
+///
+/// # Arguments
+///
+/// * `app` - The application to be initialized and runned.
+fn default_runner(app: App) {
+  app.run_schedule(Init);
+
+  loop {
+    app.run_schedule(Update);
+  }
+}
+
 /// A structure representing an application.
 ///
 /// This encapsulates all convenience wrappers around a global application
 /// [`State`] and a runtime [`Scheduler`] to execute [`Handler`]s.
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct App {
   state: Arc<Mutex<State>>,
   scheduler: Arc<Mutex<Scheduler>>,
+  runner: RunnerFn,
+}
+
+/// Implement the [`Default`] trait for the [`App`] struct.
+impl Default for App {
+  fn default() -> Self {
+    Self {
+      state: Default::default(),
+      scheduler: Default::default(),
+      runner: default_runner,
+    }
+  }
 }
 
 impl App {
-  /// Create and start the application loop.
-  ///
-  /// This method takes ownership of the application so everything must happen
-  /// within the  from this point and until the application exits.
-  pub fn run(&self) {
-    self.run_schedule(Init);
+  /// Runs the application using the provided runner function.
+  pub fn run(&mut self) {
+    let runner = std::mem::replace(&mut self.runner, default_runner);
+    let app = std::mem::take(self);
 
-    loop {
-      self.run_schedule(Update);
-    }
+    (runner)(app);
+  }
+
+  /// Sets the runner function for the application.
+  ///
+  /// # Arguments
+  /// * `runner` - The new runner function to be used by the application.
+  pub(crate) fn set_runner(&mut self, runner: RunnerFn) {
+    self.runner = runner;
   }
 
   /// Internal thread-safe method to run a specific schedule in the
@@ -39,7 +72,7 @@ impl App {
   /// # Arguments
   ///
   /// * `label` - The schedule label to run.
-  fn run_schedule<R: ScheduleLabel + 'static>(&self, label: R) {
+  pub(crate) fn run_schedule<R: ScheduleLabel + 'static>(&self, label: R) {
     if let Ok(mut scheduler) = self.scheduler.try_lock() {
       if let Ok(mut state) = self.state.try_lock() {
         scheduler.run(label, &mut state);
