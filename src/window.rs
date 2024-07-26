@@ -1,60 +1,73 @@
 use crate::{
-  app::{App, Module, Update},
-  state::ResMut,
+  app::{App, Init, Module, Update},
+  state::{Res, ScheduleLabel},
 };
-
-use std::time::Duration;
 
 use winit::{
   application::ApplicationHandler,
   event::WindowEvent,
   event_loop::{self, EventLoop},
-  platform::pump_events::{EventLoopExtPumpEvents, PumpStatus},
   window::{Window, WindowAttributes},
 };
+
+/// A schedule label that represents when the window is being redrawn.
+#[derive(ScheduleLabel)]
+struct RedrawRequested;
 
 /// A module that manages a winit window.
 pub struct WindowModule;
 
-impl Module for WindowModule {
-  fn build(&self, app: &mut App) {
-    app
-      .add_state(EventLoop::new().expect("Failed to create event loop"))
-      .add_state(WindowApp::default())
-      .add_handler(Update, Self::update);
-  }
-}
-
 impl WindowModule {
-  /// An update function that handles pumping of application events.
+  /// Runs the winit application.
   ///
   /// # Arguments
   ///
-  /// * `event_loop` - A mutable reference to the winit [`EventLoop`].
-  /// * `app` - A mutable reference to the [`WindowApp`].
-  fn update(mut event_loop: ResMut<EventLoop<()>>, mut app: ResMut<WindowApp>) {
-    let status = event_loop.pump_app_events(Some(Duration::ZERO), &mut *app);
+  /// * `app` - The [`App`] to be run.
+  fn runner(app: App) {
+    let mut window_app = WindowApp::new(app);
 
-    if let PumpStatus::Exit(exit_code) = status {
-      std::process::exit(exit_code);
-    }
+    let event_loop = EventLoop::new().unwrap();
+    event_loop.run_app(&mut window_app).unwrap();
+  }
+}
+
+impl Module for WindowModule {
+  fn build(&self, app: &mut App) {
+    app
+      .add_handler(RedrawRequested, |window: Res<Window>| {
+        window.request_redraw()
+      })
+      .set_runner(Self::runner);
   }
 }
 
 /// A winit application that manages a window.
-#[derive(Default)]
 pub struct WindowApp {
-  window: Option<Window>,
+  app: App,
+}
+
+impl WindowApp {
+  /// Creates a new winit application.
+  ///
+  /// # Arguments
+  ///
+  /// * `app` - The internal [`App`] to be run.
+  pub fn new(app: App) -> Self {
+    WindowApp { app }
+  }
 }
 
 impl ApplicationHandler<()> for WindowApp {
   fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
     // Create the application window
-    let window = event_loop
-      .create_window(WindowAttributes::default())
-      .expect("Failed to create window");
+    self.app.add_state(
+      event_loop
+        .create_window(WindowAttributes::default())
+        .unwrap(),
+    );
 
-    self.window = Some(window);
+    // Run the application initialization schedule
+    self.app.run_schedule(Init);
   }
 
   fn window_event(
@@ -65,12 +78,17 @@ impl ApplicationHandler<()> for WindowApp {
   ) {
     match event {
       WindowEvent::CloseRequested => {
-        println!("The close button was pressed; stopping");
         event_loop.exit();
       }
+
       WindowEvent::RedrawRequested => {
-        self.window.as_ref().unwrap().request_redraw();
+        // Run the application update schedule
+        self.app.run_schedule(Update);
+
+        // Run the application redraw schedule
+        self.app.run_schedule(RedrawRequested);
       }
+
       _ => (),
     }
   }
