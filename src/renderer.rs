@@ -1,3 +1,10 @@
+use std::sync::Arc;
+
+use crate::{
+  prelude::{Init, Module, Res},
+  window::Window,
+};
+
 /// A structure holding wgpu related structures for usage within the library.
 ///
 /// Encapsulates the main wgpu objects within a structure of its own called a
@@ -226,4 +233,52 @@ pub trait Renderable {
   ///
   /// * `render_pass` - The actual [`wgpu::RenderPass`] to use for rendering.
   fn render<'b>(&'b self, render_pass: &mut wgpu::RenderPass<'b>);
+}
+
+pub struct RenderModule;
+
+impl Module for RenderModule {
+  fn build(&self, app: &mut crate::prelude::App) {
+    app.add_handler(Init, Self::init);
+  }
+}
+
+impl RenderModule {
+  pub fn init(window: Res<Window>) {
+    // Create a new instance of a wgpu instance to create our surface from the
+    // newly created window and the adapter that will be used to create our
+    // rendering context
+    let wgpu = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+
+    // Request an adapter that is compatible with the newly created surface and
+    // that ideally is a discrete GPU with high performance
+    let adapter = pollster::block_on(async {
+      wgpu
+        .request_adapter(&wgpu::RequestAdapterOptions {
+          power_preference: wgpu::PowerPreference::default(),
+          compatible_surface: Some(&window.surface().unwrap()),
+          force_fallback_adapter: false,
+        })
+        .await
+        .unwrap()
+    });
+
+    // Request a device and a command queue from our adapter
+    let (device, queue) = pollster::block_on(async {
+      adapter
+        .request_device(
+          &wgpu::DeviceDescriptor {
+            label: Some("Device"),
+            memory_hints: wgpu::MemoryHints::default(),
+            required_limits: wgpu::Limits::default(),
+            required_features: wgpu::Features::empty(),
+          },
+          None,
+        )
+        .await
+        .unwrap()
+    });
+
+    // let ctx = RenderContext::new(adapter, device, queue, surface);
+  }
 }
