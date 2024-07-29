@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::{
-  app::{App, Init, Module},
-  state::Res,
+  app::{App, Commands, Init, Module},
+  state::{Res, ResMut},
 };
 
 use winit::window::Window;
@@ -230,7 +230,7 @@ impl RenderModule {
   /// # Arguments
   ///
   /// * `window` - The [`Arc<Window>`] representing the main window.
-  pub fn init(window: Res<Arc<Window>>) {
+  pub fn init(mut commands: ResMut<Commands>, window: Res<Arc<Window>>) {
     // Create a new instance of a wgpu instance to create our surface from the
     // newly created window and the adapter that will be used to create our
     // rendering context
@@ -271,5 +271,8 @@ impl RenderModule {
     // Create a new instance of our render context
     let ctx = RenderContext::new(adapter, device, queue, surface);
     ctx.resize(window.inner_size().width, window.inner_size().height);
+
+    // Store in the internal state
+    commands.add_resource(ctx);
   }
 }

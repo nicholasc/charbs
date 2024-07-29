@@ -5,7 +5,7 @@ struct MyModule;
 impl Module for MyModule {
   fn build(&self, app: &mut App) {
     app
-      .add_state(0)
+      .add_resource(0)
       .add_handler(Init, Self::init)
       .add_handler(Update, Self::update);
   }
@@ -16,7 +16,7 @@ impl MyModule {
     println!("Hello from MyModule!");
   }
 
-  fn update(mut i: ResMut<i32>) {
+  fn update(mut i: ResMut<i32>, _ctx: Res<RenderContext>) {
     if *i < 10 {
       println!("MyModule update! {}", *i);
       *i += 1;
@@ -27,6 +27,7 @@ impl MyModule {
 fn main() {
   App::default()
     .add_module(WindowModule)
+    .add_module(RenderModule)
     .add_module(MyModule)
     .run();
 }

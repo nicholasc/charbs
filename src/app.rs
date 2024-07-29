@@ -1,4 +1,4 @@
-use crate::state::{Handler, IntoHandler, ScheduleLabel, Scheduler, State};
+use crate::state::{Handler, IntoHandler, ResMut, ScheduleLabel, Scheduler, State};
 
 use std::sync::{Arc, Mutex};
 
@@ -19,11 +19,12 @@ type RunnerFn = fn(App);
 /// # Arguments
 ///
 /// * `app` - The application to be initialized and runned.
-fn default_runner(app: App) {
+fn default_runner(mut app: App) {
   app.run_schedule(Init);
 
   loop {
     app.run_schedule(Update);
+    app.execute_commands();
   }
 }
 
@@ -31,7 +32,6 @@ fn default_runner(app: App) {
 ///
 /// This encapsulates all convenience wrappers around a global application
 /// [`State`] and a runtime [`Scheduler`] to execute [`Handler`]s.
-#[derive(Clone)]
 pub struct App {
   state: Arc<Mutex<State>>,
   scheduler: Arc<Mutex<Scheduler>>,
@@ -52,15 +52,21 @@ impl Default for App {
 impl App {
   /// Runs the application using the provided runner function.
   pub fn run(&mut self) {
+    // Take ownership of the runner function and the application.
     let runner = std::mem::replace(&mut self.runner, default_runner);
-    let app = std::mem::take(self);
+    let mut app = std::mem::take(self);
 
+    // Create the initial commands buffer.
+    app.add_resource(Commands::default());
+
+    // Up, up and away!
     (runner)(app);
   }
 
   /// Sets the runner function for the application.
   ///
   /// # Arguments
+  ///
   /// * `runner` - The new runner function to be used by the application.
   pub(crate) fn set_runner(&mut self, runner: RunnerFn) {
     self.runner = runner;
@@ -77,6 +83,17 @@ impl App {
       if let Ok(mut state) = self.state.try_lock() {
         scheduler.run(label, &mut state);
       }
+    }
+  }
+
+  /// Execute all commands queued in the [`Commands`] struct.
+  pub(crate) fn execute_commands(&mut self) {
+    if let Ok(mut state) = self.state.try_lock() {
+      // Take the state from the commands structure.
+      let mut new_state = std::mem::take(&mut state.get::<ResMut<Commands>>().state);
+
+      // Merge the new state into the existing state.
+      state.merge(&mut new_state);
     }
   }
 
@@ -108,9 +125,9 @@ impl App {
   /// * `resource` - The resource to add to the [`State`].
   ///
   /// * `->` - A mutable reference to the [`App`].
-  pub fn add_state<R: 'static>(&mut self, resource: R) -> &mut Self {
+  pub fn add_resource<R: 'static>(&mut self, resource: R) -> &mut Self {
     if let Ok(mut state) = self.state.try_lock() {
-      state.add(resource);
+      state.add_resource(resource);
     }
 
     self
@@ -137,4 +154,24 @@ pub trait Module {
   ///
   /// * `app` - A mutable reference to the [`App`].
   fn build(&self, app: &mut App);
+}
+
+#[derive(Default)]
+pub struct Commands {
+  pub(crate) state: State,
+}
+
+impl Commands {
+  /// Add a resource to the application's [`State`].
+  ///
+  /// # Arguments
+  ///
+  /// * `resource` - The resource to add to the [`State`].
+  ///
+  /// * `->` - A mutable reference to the [`Commands`].
+  pub fn add_resource<R: 'static>(&mut self, resource: R) -> &mut Self {
+    self.state.add_resource(resource);
+
+    self
+  }
 }

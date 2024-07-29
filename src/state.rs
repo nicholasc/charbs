@@ -27,11 +27,22 @@ impl State {
   /// # Arguments
   ///
   /// * `resource` - The resource of type `R` to be added.
-  pub fn add<R: 'static>(&mut self, resource: R) {
+  pub fn add_resource<R: 'static>(&mut self, resource: R) {
     let key = TypeId::of::<R>();
     let value = RefCell::new(Box::new(resource));
 
     self.resources.insert(key, value);
+  }
+
+  /// Merges another state into this one.
+  ///
+  /// # Arguments
+  ///
+  /// * `state` - The [`State`] to be merged into this one.
+  pub fn merge(&mut self, state: &mut Self) {
+    for (key, value) in state.drain() {
+      self.resources.insert(key, value);
+    }
   }
 
   /// Returns a generic resource from the state container.
@@ -56,6 +67,19 @@ impl State {
   /// container.
   pub fn all_mut(&mut self) -> &mut HashMap<TypeId, RefCell<Box<dyn Any>>> {
     &mut self.resources
+  }
+
+  /// Drains all resources from the state container and returns them as a vector
+  /// containing a tuple with the type ID and the resource.
+  ///
+  /// Useful to easily clear the state container and re-use the resources
+  /// somewhere else.
+  ///
+  /// # Arguments
+  ///
+  /// * `->` - A vector of tuples containing the type ID and the resource.
+  pub fn drain(&mut self) -> Vec<(TypeId, RefCell<Box<dyn Any>>)> {
+    self.resources.drain().collect()
   }
 }
 

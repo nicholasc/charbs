@@ -12,13 +12,9 @@ use winit::{
   window::{Window, WindowAttributes},
 };
 
-/// A schedule label for crate renderers to execute.
-#[derive(ScheduleLabel)]
-pub(crate) struct Render;
-
 /// A private schedule label that represents when the window is being redrawn.
 #[derive(ScheduleLabel)]
-struct RedrawRequested;
+pub(crate) struct RedrawRequested;
 
 /// A module that manages a winit window.
 pub struct WindowModule;
@@ -68,7 +64,7 @@ impl WindowApp {
 impl ApplicationHandler<()> for WindowApp {
   fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
     // Create the application window
-    self.app.add_state(Arc::new(
+    self.app.add_resource(Arc::new(
       event_loop
         .create_window(WindowAttributes::default())
         .unwrap(),
@@ -76,6 +72,7 @@ impl ApplicationHandler<()> for WindowApp {
 
     // Run the application initialization schedule
     self.app.run_schedule(Init);
+    self.app.execute_commands();
   }
 
   fn window_event(
@@ -93,11 +90,11 @@ impl ApplicationHandler<()> for WindowApp {
         // Run the application update schedule
         self.app.run_schedule(Update);
 
-        // Run the renderer's schedule
-        self.app.run_schedule(Render);
-
         // Run the application redraw schedule
         self.app.run_schedule(RedrawRequested);
+
+        // Execute any pending commands
+        self.app.execute_commands();
       }
 
       _ => (),
