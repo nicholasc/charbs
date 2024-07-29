@@ -229,6 +229,7 @@ impl RenderModule {
   ///
   /// # Arguments
   ///
+  /// * `commands` - A mutable reference to the [`Commands`] dispatcher.
   /// * `window` - The [`Arc<Window>`] representing the main window.
   pub fn init(mut commands: ResMut<Commands>, window: Res<Arc<Window>>) {
     // Create a new instance of a wgpu instance to create our surface from the
