@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
   app::{App, Init, Module, Update},
   state::{Res, ScheduleLabel},
@@ -10,7 +12,11 @@ use winit::{
   window::{Window, WindowAttributes},
 };
 
-/// A schedule label that represents when the window is being redrawn.
+/// A schedule label for crate renderers to execute.
+#[derive(ScheduleLabel)]
+pub(crate) struct Render;
+
+/// A private schedule label that represents when the window is being redrawn.
 #[derive(ScheduleLabel)]
 struct RedrawRequested;
 
@@ -34,7 +40,7 @@ impl WindowModule {
 impl Module for WindowModule {
   fn build(&self, app: &mut App) {
     app
-      .add_handler(RedrawRequested, |window: Res<Window>| {
+      .add_handler(RedrawRequested, |window: Res<Arc<Window>>| {
         window.request_redraw()
       })
       .set_runner(Self::runner);
@@ -52,6 +58,8 @@ impl WindowApp {
   /// # Arguments
   ///
   /// * `app` - The internal [`App`] to be run.
+  ///
+  /// * `->` A new winit application.
   pub fn new(app: App) -> Self {
     WindowApp { app }
   }
@@ -60,11 +68,11 @@ impl WindowApp {
 impl ApplicationHandler<()> for WindowApp {
   fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
     // Create the application window
-    self.app.add_state(
+    self.app.add_state(Arc::new(
       event_loop
         .create_window(WindowAttributes::default())
         .unwrap(),
-    );
+    ));
 
     // Run the application initialization schedule
     self.app.run_schedule(Init);
@@ -84,6 +92,9 @@ impl ApplicationHandler<()> for WindowApp {
       WindowEvent::RedrawRequested => {
         // Run the application update schedule
         self.app.run_schedule(Update);
+
+        // Run the renderer's schedule
+        self.app.run_schedule(Render);
 
         // Run the application redraw schedule
         self.app.run_schedule(RedrawRequested);

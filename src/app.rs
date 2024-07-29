@@ -87,7 +87,8 @@ impl App {
   ///
   /// * `label` - The [`ScheduleLabel`] to add the [`Handler`] to.
   /// * `handler` - The [`Handler`] to add to the schedule.
-  /// * `->` - A reference to the application.
+  ///
+  /// * `->` - A mutable reference to the [`App`].
   pub fn add_handler<R: ScheduleLabel + 'static, I, S: Handler + 'static>(
     &mut self,
     label: R,
@@ -105,7 +106,8 @@ impl App {
   /// # Arguments
   ///
   /// * `resource` - The resource to add to the [`State`].
-  /// * `->` - A reference to the [`App`].
+  ///
+  /// * `->` - A mutable reference to the [`App`].
   pub fn add_state<R: 'static>(&mut self, resource: R) -> &mut Self {
     if let Ok(mut state) = self.state.try_lock() {
       state.add(resource);
@@ -119,7 +121,8 @@ impl App {
   /// # Arguments
   ///
   /// * `module` - The [`Module`] to add to the application.
-  /// * `->` - A reference to the [`App`].
+  ///
+  /// * `->` - A mutable reference to the [`App`].
   pub fn add_module(&mut self, module: impl Module) -> &mut Self {
     module.build(self);
     self
@@ -132,6 +135,6 @@ pub trait Module {
   ///
   /// # Arguments
   ///
-  /// * `app` - A mutable reference to the application.
+  /// * `app` - A mutable reference to the [`App`].
   fn build(&self, app: &mut App);
 }

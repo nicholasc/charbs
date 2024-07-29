@@ -17,6 +17,7 @@ impl<T: Copy + Pod> Buffer<T> {
   /// * `device` - The [`wgpu::Device`] to which the buffer will be bound.
   /// * `len` - The length of the buffer.
   /// * `usage` - The buffer usage represented by a [`wgpu::BufferUsages`].
+  ///
   /// * `->` - A [`Buffer`] with the specified length and usage.
   pub fn new(device: &wgpu::Device, len: usize, usage: wgpu::BufferUsages) -> Self {
     // Define buffer descriptor
@@ -44,6 +45,7 @@ impl<T: Copy + Pod> Buffer<T> {
   /// * `device` - The [`wgpu::Device`] to which the buffer will be bound.
   /// * `usage` - The buffer usage represented by a [`wgpu::BufferUsages`].
   /// * `data` - An array of data to initialize the buffer with.
+  ///
   /// * `->` - A [`Buffer`] with the specified length and usage.
   pub fn new_with_data(
     device: &wgpu::Device,

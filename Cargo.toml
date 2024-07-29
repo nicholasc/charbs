@@ -14,6 +14,16 @@ bytemuck = { version = "1.16.1", features = ["derive"] }
 wgpu = "22.0.0"
 encase = { version = "0.9.0", features = ["glam"] }
 pollster = "0.3.0"
+image = { version = "0.25.2", features = [
+  "gif",
+  "jpeg",
+  "png",
+  "tga",
+  "tiff",
+  "bmp",
+  "webp",
+] }
+glam = "0.28.0"
 
 [[example]]
 name = "state_basic"

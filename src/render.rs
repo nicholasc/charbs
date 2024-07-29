@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use crate::{
-  prelude::{Init, Module, Res},
-  window::Window,
+  app::{App, Init, Module},
+  state::Res,
 };
+
+use winit::window::Window;
 
 /// A structure holding wgpu related structures for usage within the library.
 ///
@@ -29,6 +31,7 @@ impl RenderContext {
   /// * `device` - The [`wgpu::Device`] used for creating objects on the gpu.
   /// * `queue` - The [`wgpu::Queue`] used to store and execute command buffers.
   /// * `surface` - The [`wgpu::Surface`] the renderer will be drawing to.
+  ///
   /// * `->` - A new [`RenderContext`] with the provided parameters.
   pub fn new(
     adapter: wgpu::Adapter,
@@ -39,7 +42,7 @@ impl RenderContext {
     Self {
       adapter,
       device,
-      queue: queue,
+      queue,
       surface,
     }
   }
@@ -82,9 +85,6 @@ impl RenderContext {
 }
 
 /// A wrapper structure that represents a single frame to be renderered.
-///
-/// This structure is built to only expose what is needed for a
-/// [`crate::app::Runtime`] in order to draw pipelines to the screen.
 pub struct RenderFrame {
   encoder: wgpu::CommandEncoder,
   view: wgpu::TextureView,
@@ -98,8 +98,9 @@ impl RenderFrame {
   ///
   /// * `device` - The [`wgpu::Device`] to use when building the frame.
   /// * `surface` - The [`wgpu::Surface`] to draw to.
+  ///
   /// * `->` - A new [`RenderFrame`] ready to be drawn to.
-  pub fn new(device: &wgpu::Device, surface: &wgpu::Surface<'static>) -> Self {
+  pub fn new(device: &wgpu::Device, surface: &wgpu::Surface<'_>) -> Self {
     // TODO: This fails when texture is 1x1 or less.
     // Might need to pass this as argument and handle texture size
     let texture = surface.get_current_texture().unwrap();
@@ -180,6 +181,7 @@ impl RenderFrame {
 /// }
 /// ```
 pub struct RenderPass<'a> {
+  #[allow(unused)]
   inner: wgpu::RenderPass<'a>,
 }
 
@@ -191,6 +193,7 @@ impl<'a> RenderPass<'a> {
   ///
   /// * `encoder` - The [`wgpu::CommandEncoder`] used to create the RenderPass.
   /// * `color_attachments` - The [`wgpu::RenderPassColorAttachment`] to use.
+  ///
   /// * -> A new [`RenderPass`] ready to be used for rendering.
   pub fn new(
     encoder: &'a mut wgpu::CommandEncoder,
@@ -207,48 +210,34 @@ impl<'a> RenderPass<'a> {
     Self { inner }
   }
 
-  /// Renders a structure that implements the [`Renderable`] trait.
-  ///
-  /// # Arguments
-  ///
-  /// * `object` - The [`Renderable`] object.
-  pub fn render(&mut self, object: &'a dyn Renderable) {
-    object.render(&mut self.inner);
-  }
-
   /// Consumes the [`RenderPass`].
   #[inline(always)]
   pub fn finish(self) {}
 }
 
-/// A generic trait for objects that can rendered to a [`RenderFrame`].
-pub trait Renderable {
-  /// Updates the mesh uniform buffers.
-  #[inline(always)]
-  fn update(&mut self) {}
-
-  /// Renders the object.
-  ///
-  /// # Arguments
-  ///
-  /// * `render_pass` - The actual [`wgpu::RenderPass`] to use for rendering.
-  fn render<'b>(&'b self, render_pass: &mut wgpu::RenderPass<'b>);
-}
-
+/// A structure that handles the initialization of the rendering module.
 pub struct RenderModule;
 
 impl Module for RenderModule {
-  fn build(&self, app: &mut crate::prelude::App) {
+  fn build(&self, app: &mut App) {
     app.add_handler(Init, Self::init);
   }
 }
 
 impl RenderModule {
-  pub fn init(window: Res<Window>) {
+  /// Initializes the basic structures and resources required for rendering.
+  ///
+  /// # Arguments
+  ///
+  /// * `window` - The [`Arc<Window>`] representing the main window.
+  pub fn init(window: Res<Arc<Window>>) {
     // Create a new instance of a wgpu instance to create our surface from the
     // newly created window and the adapter that will be used to create our
     // rendering context
     let wgpu = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+
+    // Create a new wgpu surface from an active window handle.
+    let surface = wgpu.create_surface(Arc::clone(&*window)).unwrap();
 
     // Request an adapter that is compatible with the newly created surface and
     // that ideally is a discrete GPU with high performance
@@ -256,7 +245,7 @@ impl RenderModule {
       wgpu
         .request_adapter(&wgpu::RequestAdapterOptions {
           power_preference: wgpu::PowerPreference::default(),
-          compatible_surface: Some(&window.surface().unwrap()),
+          compatible_surface: Some(&surface),
           force_fallback_adapter: false,
         })
         .await
@@ -279,6 +268,8 @@ impl RenderModule {
         .unwrap()
     });
 
-    // let ctx = RenderContext::new(adapter, device, queue, surface);
+    // Create a new instance of our render context
+    let ctx = RenderContext::new(adapter, device, queue, surface);
+    ctx.resize(window.inner_size().width, window.inner_size().height);
   }
 }

@@ -1,7 +1,14 @@
 pub mod app;
 pub mod binding;
 pub mod buffer;
+pub mod camera;
+pub mod geometry;
+pub mod input;
+pub mod material;
+// pub mod mesh;
 pub mod prelude;
-pub mod renderer;
+pub mod render;
 pub mod state;
+pub mod texture;
+pub mod transform;
 pub mod window;

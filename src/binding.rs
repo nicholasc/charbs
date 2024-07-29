@@ -12,7 +12,8 @@ pub trait Binding {
   /// # Arguments
   ///
   /// * `index`: The index on which to assign the binding.
-  /// * `->` - A [`BindGroupLayoutEntry`] with the specified index.
+  ///
+  /// * `->` - A [`wgpu::BindGroupLayoutEntry`] with the specified index.
   fn layout(&self, index: u32) -> wgpu::BindGroupLayoutEntry;
 
   /// Provides the wgpu group entry for the binding.
@@ -20,7 +21,8 @@ pub trait Binding {
   /// # Arguments
   ///
   /// * `index`: The index on which to assign the binding.
-  /// * `->` - A [`BindGroupEntry`] with the specified index.
+  ///
+  /// * `->` - A [`wgpu::BindGroupEntry`] with the specified index.
   fn entry(&self, index: u32) -> wgpu::BindGroupEntry;
 }
 
@@ -46,6 +48,7 @@ impl BindGroup {
   ///
   /// * `device` - The [`wgpu::Device`] to which the group will be bound.
   /// * `bindings` - A vector of [`Binding`] from which to create the group.
+  ///
   /// * `->` - A [`BindGroup`] with the specified bindings.
   pub fn new(device: &wgpu::Device, bindings: Vec<&dyn Binding>) -> Self {
     // Create the bind group layout
@@ -95,8 +98,10 @@ impl<T: ShaderType + WriteInto> Uniform<T> {
   ///
   /// # Arguments
   ///
-  /// * `ctx` - The [`RenderContext`] to which the uniform will be bound.
+  /// * `device` - The [`wgpu::Device`] to which the uniform will be bound.
   /// * `data` - The abstract user data that defines the uniform.
+  ///
+  /// * `->` - A new instance of [`Uniform`] with the specified data.
   pub fn new(device: &wgpu::Device, data: T) -> Self {
     let mut uniform_buffer = UniformBuffer::new(Vec::new());
     uniform_buffer.write(&data).unwrap();
