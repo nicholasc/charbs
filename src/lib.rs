@@ -6,6 +6,7 @@ pub mod geometry;
 pub mod input;
 pub mod material;
 // pub mod mesh;
+pub mod events;
 pub mod prelude;
 pub mod render;
 pub mod state;
