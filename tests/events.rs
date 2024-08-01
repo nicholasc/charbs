@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
   use charbs::events::*;
+  use std::any::Any;
 
   #[derive(Event, Clone, Debug, PartialEq)]
   struct CustomEvent1 {
