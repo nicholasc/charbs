@@ -27,7 +27,7 @@ fn default_runner(mut app: App) {
 
   loop {
     app.run_schedule(Update);
-    app.execute_commands();
+    app.run_post_loop();
   }
 }
 
@@ -74,8 +74,10 @@ impl App {
   /// # Arguments
   ///
   /// * `runner` - The new runner function to be used by the application.
-  pub(crate) fn set_runner(&mut self, runner: RunnerFn) {
+  pub(crate) fn set_runner(&mut self, runner: RunnerFn) -> &mut Self {
     self.runner = runner;
+
+    self
   }
 
   /// Internal thread-safe method to run a specific schedule in the
@@ -92,10 +94,23 @@ impl App {
     }
   }
 
-  /// Execute all commands queued in the [`Commands`] struct.
-  pub(crate) fn execute_commands(&mut self) {
+  /// Runs the post-loop logic for the application.
+  ///
+  /// Execute all commands queued in the [`Commands`] struct and reset the [`EventBus`] for the next iteration.
+  pub(crate) fn run_post_loop(&mut self) {
+    // Reset the event bus.
+    if let Ok(state) = self.state.try_lock() {
+      state.get::<ResMut<EventBus>>().clear();
+    }
+
+    //  Execute the commands.
+    self.run_commands();
+  }
+
+  /// Internal thread-safe method to execute the commands in the [`Commands`] struct.
+  pub(crate) fn run_commands(&mut self) {
     if let Ok(mut state) = self.state.try_lock() {
-      // Take the state from the commands structure.
+      // Take the state from the commands structure
       let mut new_state = std::mem::take(&mut state.get::<ResMut<Commands>>().state);
 
       // Merge the new state into the existing state.

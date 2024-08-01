@@ -21,7 +21,7 @@ pub struct EventBus {
 }
 
 impl EventBus {
-  /// Write an event to the event bus.
+  /// Write an event onto the event bus.
   ///
   /// # Arguments
   ///
@@ -40,10 +40,10 @@ impl EventBus {
   /// * `->` - A vector of events of the specified type.
   pub fn read<T: Event + 'static>(&mut self) -> Vec<T> {
     let type_id = TypeId::of::<T>();
-    let mut events = self.events.remove(&type_id).unwrap_or_default();
+    let events = self.events.remove(&type_id).unwrap_or_default();
 
     events
-      .drain(..)
+      .into_iter()
       .map(|event| *event.as_any().downcast().unwrap())
       .collect()
   }
@@ -51,5 +51,12 @@ impl EventBus {
   /// Clear all events from the event bus.
   pub fn clear(&mut self) {
     self.events.clear();
+  }
+
+  /// Clear events of a specific type from the event bus.
+  pub fn clear_type<T: Event + 'static>(&mut self) {
+    let type_id = TypeId::of::<T>();
+
+    self.events.remove(&type_id);
   }
 }

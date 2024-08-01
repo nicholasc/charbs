@@ -19,7 +19,7 @@ pub(crate) struct Render;
 
 /// An event that represents when the window is resized.
 #[derive(Event)]
-pub struct Resized {
+pub struct WindowResized {
   pub width: u32,
   pub height: u32,
 }
@@ -44,13 +44,18 @@ impl WindowModule {
 impl Module for WindowModule {
   fn build(&self, app: &mut App) {
     app
+      .set_runner(Self::runner)
       .add_handler(Init, Self::request_redraw)
-      .add_handler(Render, Self::request_redraw)
-      .set_runner(Self::runner);
+      .add_handler(Render, Self::request_redraw);
   }
 }
 
 impl WindowModule {
+  /// Requests a redraw of the window.
+  ///
+  /// # Arguments
+  ///
+  /// * `window` - The window to request a redraw.
   pub fn request_redraw(window: Res<Arc<Window>>) {
     window.request_redraw();
   }
@@ -85,7 +90,9 @@ impl ApplicationHandler<()> for WindowApp {
 
     // Run the application initialization schedule
     self.app.run_schedule(Init);
-    self.app.execute_commands();
+
+    // Execute the application commands
+    self.app.run_commands();
   }
 
   fn window_event(
@@ -96,9 +103,9 @@ impl ApplicationHandler<()> for WindowApp {
   ) {
     match event {
       WindowEvent::Resized(size) => {
-        // Dispatch the resized event to the event bus
+        // Dispatch the resize event to the event bus
         if let Ok(state) = self.app.state.try_lock() {
-          state.get::<ResMut<EventBus>>().write(Resized {
+          state.get::<ResMut<EventBus>>().write(WindowResized {
             width: size.width,
             height: size.height,
           });
@@ -116,8 +123,8 @@ impl ApplicationHandler<()> for WindowApp {
         // Run the application redraw schedule
         self.app.run_schedule(Render);
 
-        // Execute any pending commands
-        self.app.execute_commands();
+        // Run the post-loop logic
+        self.app.run_post_loop();
       }
 
       _ => (),

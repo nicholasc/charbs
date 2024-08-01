@@ -16,7 +16,7 @@ impl MyModule {
     println!("Hello from MyModule!");
   }
 
-  fn update(mut i: ResMut<i32>, _ctx: Res<RenderContext>) {
+  fn update(mut i: ResMut<i32>) {
     if *i < 10 {
       println!("MyModule update! {}", *i);
       *i += 1;
@@ -27,7 +27,6 @@ impl MyModule {
 fn main() {
   App::default()
     .add_module(WindowModule)
-    .add_module(RenderModule)
     .add_module(MyModule)
     .run();
 }

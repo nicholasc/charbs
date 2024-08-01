@@ -28,6 +28,24 @@ mod tests {
   }
 
   #[test]
+  fn event_bus_multiple_types() {
+    let event1 = CustomEvent1 {
+      message: "event1".to_string(),
+    };
+    let event2 = CustomEvent2 { data: 42 };
+
+    let mut event_bus = EventBus::default();
+    event_bus.write(event1.clone());
+    event_bus.write(event2.clone());
+
+    let mut test_events = event_bus.read::<CustomEvent1>();
+    let mut custom_events = event_bus.read::<CustomEvent2>();
+
+    assert_eq!(test_events.pop(), Some(event1));
+    assert_eq!(custom_events.pop(), Some(event2));
+  }
+
+  #[test]
   fn event_bus_clears_events() {
     let event1 = CustomEvent1 {
       message: "event1".to_string(),
@@ -48,20 +66,22 @@ mod tests {
   }
 
   #[test]
-  fn event_bus_multiple_types() {
+  fn event_bus_clears_type() {
     let event1 = CustomEvent1 {
       message: "event1".to_string(),
     };
     let event2 = CustomEvent2 { data: 42 };
 
     let mut event_bus = EventBus::default();
-    event_bus.write(event1.clone());
-    event_bus.write(event2.clone());
+    event_bus.write(event1);
+    event_bus.write(event2);
 
-    let mut test_events = event_bus.read::<CustomEvent1>();
-    let mut custom_events = event_bus.read::<CustomEvent2>();
+    event_bus.clear_type::<CustomEvent1>();
 
-    assert_eq!(test_events.pop(), Some(event1));
-    assert_eq!(custom_events.pop(), Some(event2));
+    let test_events = event_bus.read::<CustomEvent1>();
+    let custom_events = event_bus.read::<CustomEvent2>();
+
+    assert_eq!(test_events.len(), 0);
+    assert_eq!(custom_events.len(), 1);
   }
 }
