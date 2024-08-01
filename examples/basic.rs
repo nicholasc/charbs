@@ -25,8 +25,5 @@ impl MyModule {
 }
 
 fn main() {
-  App::default()
-    .add_module(WindowModule)
-    .add_module(MyModule)
-    .run();
+  App::default().add_module(MyModule).run();
 }

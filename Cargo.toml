@@ -24,11 +24,3 @@ image = { version = "0.25.2", features = [
   "webp",
 ] }
 glam = "0.28.0"
-
-[[example]]
-name = "state_basic"
-path = "examples/state/basic.rs"
-
-[[example]]
-name = "app_window"
-path = "examples/app/window.rs"
