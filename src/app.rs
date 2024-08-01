@@ -158,7 +158,7 @@ pub trait Module {
 
 #[derive(Default)]
 pub struct Commands {
-  pub(crate) state: State,
+  state: State,
 }
 
 impl Commands {

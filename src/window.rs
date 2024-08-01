@@ -14,7 +14,7 @@ use winit::{
 
 /// A private schedule label that represents when the window is being redrawn.
 #[derive(ScheduleLabel)]
-pub(crate) struct RedrawRequested;
+pub(crate) struct Render;
 
 /// A module that manages a winit window.
 pub struct WindowModule;
@@ -36,9 +36,7 @@ impl WindowModule {
 impl Module for WindowModule {
   fn build(&self, app: &mut App) {
     app
-      .add_handler(RedrawRequested, |window: Res<Arc<Window>>| {
-        window.request_redraw()
-      })
+      .add_handler(Render, |window: Res<Arc<Window>>| window.request_redraw())
       .set_runner(Self::runner);
   }
 }
@@ -91,7 +89,7 @@ impl ApplicationHandler<()> for WindowApp {
         self.app.run_schedule(Update);
 
         // Run the application redraw schedule
-        self.app.run_schedule(RedrawRequested);
+        self.app.run_schedule(Render);
 
         // Execute any pending commands
         self.app.execute_commands();
