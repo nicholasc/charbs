@@ -1,4 +1,7 @@
-use crate::state::{Handler, IntoHandler, ResMut, ScheduleLabel, Scheduler, State};
+use crate::{
+  events::EventBus,
+  state::{Handler, IntoHandler, ResMut, ScheduleLabel, Scheduler, State},
+};
 
 use std::sync::{Arc, Mutex};
 
@@ -33,7 +36,9 @@ fn default_runner(mut app: App) {
 /// This encapsulates all convenience wrappers around a global application
 /// [`State`] and a runtime [`Scheduler`] to execute [`Handler`]s.
 pub struct App {
-  state: Arc<Mutex<State>>,
+  // TODO: Used to provide Window apps easy access to state.
+  // This should be replaced by something more elegant.
+  pub(crate) state: Arc<Mutex<State>>,
   scheduler: Arc<Mutex<Scheduler>>,
   runner: RunnerFn,
 }
@@ -56,8 +61,9 @@ impl App {
     let runner = std::mem::replace(&mut self.runner, default_runner);
     let mut app = std::mem::take(self);
 
-    // Create the initial commands buffer.
+    // Create the initial app resources.
     app.add_resource(Commands::default());
+    app.add_resource(EventBus::default());
 
     // Up, up and away!
     (runner)(app);

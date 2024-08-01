@@ -1,9 +1,10 @@
-use std::sync::Arc;
-
 use crate::{
   app::{App, Init, Module, Update},
-  state::{Res, ScheduleLabel},
+  events::{Event, EventBus},
+  state::{Res, ResMut, ScheduleLabel},
 };
+
+use std::{any::Any, sync::Arc};
 
 use winit::{
   application::ApplicationHandler,
@@ -15,6 +16,13 @@ use winit::{
 /// A private schedule label that represents when the window is being redrawn.
 #[derive(ScheduleLabel)]
 pub(crate) struct Render;
+
+/// An event that represents when the window is resized.
+#[derive(Event)]
+pub struct Resized {
+  pub width: u32,
+  pub height: u32,
+}
 
 /// A module that manages a winit window.
 pub struct WindowModule;
@@ -36,8 +44,15 @@ impl WindowModule {
 impl Module for WindowModule {
   fn build(&self, app: &mut App) {
     app
-      .add_handler(Render, |window: Res<Arc<Window>>| window.request_redraw())
+      .add_handler(Init, Self::request_redraw)
+      .add_handler(Render, Self::request_redraw)
       .set_runner(Self::runner);
+  }
+}
+
+impl WindowModule {
+  pub fn request_redraw(window: Res<Arc<Window>>) {
+    window.request_redraw();
   }
 }
 
@@ -80,6 +95,16 @@ impl ApplicationHandler<()> for WindowApp {
     event: winit::event::WindowEvent,
   ) {
     match event {
+      WindowEvent::Resized(size) => {
+        // Dispatch the resized event to the event bus
+        if let Ok(state) = self.app.state.try_lock() {
+          state.get::<ResMut<EventBus>>().write(Resized {
+            width: size.width,
+            height: size.height,
+          });
+        }
+      }
+
       WindowEvent::CloseRequested => {
         event_loop.exit();
       }

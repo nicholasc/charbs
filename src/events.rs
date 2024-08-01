@@ -1,13 +1,14 @@
 pub use charbs_macros::Event;
 
-pub use std::any::Any;
-
-use std::{any::TypeId, collections::HashMap};
+use std::{
+  any::{Any, TypeId},
+  collections::HashMap,
+};
 
 /// A trait for structures that can be used as events.
 ///
 /// There is a proc macro that provides automatic impl of the `Event` trait for any struct.
-pub trait Event: Any {
+pub trait Event {
   fn as_any(self: Box<Self>) -> Box<dyn Any>
   where
     Self: 'static;
