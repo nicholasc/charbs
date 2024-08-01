@@ -169,17 +169,6 @@ impl RenderFrame {
 
 /// A wrapper structure that encapsulate a [`wgpu::RenderPass`] and offers
 /// rendering functionalities to renderable objects.
-///
-/// # Examples
-///
-/// ```
-/// ...
-/// fn render(&self, frame: &mut RenderFrame) {
-///   let mut render_pass = frame.create_render_pass();
-///   render_pass.render(&self.mesh);
-///   render_pass.finish();
-/// }
-/// ```
 pub struct RenderPass<'a> {
   #[allow(unused)]
   inner: wgpu::RenderPass<'a>,
