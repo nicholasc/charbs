@@ -44,20 +44,7 @@ impl WindowModule {
 
 impl Module for WindowModule {
   fn build(&self, app: &mut App) {
-    app
-      .set_runner(Self::runner)
-      .add_handler(Init, Self::request_redraw);
-  }
-}
-
-impl WindowModule {
-  /// Requests a redraw of the window.
-  ///
-  /// # Arguments
-  ///
-  /// * `window` - The window to request a redraw.
-  pub fn request_redraw(window: Res<Arc<Window>>) {
-    window.request_redraw();
+    app.set_runner(Self::runner);
   }
 }
 
@@ -92,17 +79,21 @@ impl ApplicationHandler<()> for WindowApp {
 
   fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
     // Create the application window
-    self.app.add_resource(Arc::new(
+    let window = Arc::new(
       event_loop
         .create_window(WindowAttributes::default())
         .unwrap(),
-    ));
+    );
 
-    // Run the application initialization schedule
+    // Store a reference to it as a resource
+    self.app.add_resource(Arc::clone(&window));
+
+    // Initialize the application & run init commands
     self.app.run_schedule(Init);
-
-    // Execute the application commands
     self.app.run_commands();
+
+    // Request a first draw
+    window.request_redraw();
   }
 
   fn window_event(
