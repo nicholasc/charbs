@@ -8,8 +8,8 @@ use std::{any::Any, sync::Arc};
 
 use winit::{
   application::ApplicationHandler,
-  event::WindowEvent,
-  event_loop::{self, EventLoop},
+  event::{StartCause, WindowEvent},
+  event_loop::{self, ActiveEventLoop, ControlFlow, EventLoop},
   window::{Window, WindowAttributes},
 };
 
@@ -37,6 +37,7 @@ impl WindowModule {
     let mut window_app = WindowApp::new(app);
 
     let event_loop = EventLoop::new().unwrap();
+    event_loop.set_control_flow(ControlFlow::Poll);
     event_loop.run_app(&mut window_app).unwrap();
   }
 }
@@ -45,8 +46,7 @@ impl Module for WindowModule {
   fn build(&self, app: &mut App) {
     app
       .set_runner(Self::runner)
-      .add_handler(Init, Self::request_redraw)
-      .add_handler(Render, Self::request_redraw);
+      .add_handler(Init, Self::request_redraw);
   }
 }
 
@@ -80,6 +80,16 @@ impl WindowApp {
 }
 
 impl ApplicationHandler<()> for WindowApp {
+  fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: StartCause) {
+    // Only request redraw if the application is being polled
+    // This avoids jittery redraws when window is being resized or moved
+    if cause == StartCause::Poll {
+      if let Ok(state) = self.app.state.try_lock() {
+        state.get::<Res<Arc<Window>>>().request_redraw();
+      }
+    }
+  }
+
   fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
     // Create the application window
     self.app.add_resource(Arc::new(
