@@ -1,4 +1,5 @@
 pub mod app;
+pub mod assets;
 pub mod binding;
 pub mod buffer;
 pub mod camera;
