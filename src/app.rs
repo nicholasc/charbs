@@ -5,6 +5,11 @@ use crate::{
 
 use std::sync::{Arc, Mutex};
 
+/// A schedule label that represents the application pre-initialization
+/// schedule.
+#[derive(ScheduleLabel)]
+pub struct PreInit;
+
 /// A schedule label that represents the application initialization schedule.
 #[derive(ScheduleLabel)]
 pub struct Init;
@@ -23,6 +28,7 @@ type RunnerFn = fn(App);
 ///
 /// * `app` - The application to be initialized and runned.
 fn default_runner(mut app: App) {
+  app.run_schedule(PreInit);
   app.run_schedule(Init);
 
   loop {
@@ -90,31 +96,24 @@ impl App {
     if let Ok(mut scheduler) = self.scheduler.try_lock() {
       if let Ok(mut state) = self.state.try_lock() {
         scheduler.run(label, &mut state);
+
+        // Take the state from the commands structure
+        let mut new_state = std::mem::take(&mut state.get::<ResMut<Commands>>().state);
+
+        // Merge the new state into the existing state.
+        state.merge(&mut new_state);
       }
     }
   }
 
   /// Runs the post-loop logic for the application.
   ///
-  /// Execute all commands queued in the [`Commands`] struct and reset the [`EventBus`] for the next iteration.
+  /// Execute all commands queued in the [`Commands`] struct and reset the
+  /// [`EventBus`] for the next iteration.
   pub(crate) fn run_post_loop(&mut self) {
     // Reset the event bus.
     if let Ok(state) = self.state.try_lock() {
       state.get::<ResMut<EventBus>>().clear();
-    }
-
-    //  Execute the commands.
-    self.run_commands();
-  }
-
-  /// Internal thread-safe method to execute the commands in the [`Commands`] struct.
-  pub(crate) fn run_commands(&mut self) {
-    if let Ok(mut state) = self.state.try_lock() {
-      // Take the state from the commands structure
-      let mut new_state = std::mem::take(&mut state.get::<ResMut<Commands>>().state);
-
-      // Merge the new state into the existing state.
-      state.merge(&mut new_state);
     }
   }
 

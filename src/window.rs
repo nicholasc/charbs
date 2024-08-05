@@ -1,5 +1,5 @@
 use crate::{
-  app::{App, Init, Module, Update},
+  app::{App, Init, Module, PreInit, Update},
   events::{Event, EventBus},
   state::{Res, ResMut, ScheduleLabel},
 };
@@ -88,9 +88,11 @@ impl ApplicationHandler<()> for WindowApp {
     // Store a reference to it as a resource
     self.app.add_resource(Arc::clone(&window));
 
+    // Initialize the application & run pre-init commands
+    self.app.run_schedule(PreInit);
+
     // Initialize the application & run init commands
     self.app.run_schedule(Init);
-    self.app.run_commands();
 
     // Request a first draw
     window.request_redraw();
