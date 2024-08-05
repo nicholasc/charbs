@@ -1,5 +1,10 @@
+use std::sync::Arc;
+
+use winit::window::Window;
+
 use crate::{
-  app::{App, Module, Update},
+  app::{App, Commands, Init, Module, Update},
+  camera::Camera,
   events::EventBus,
   rendering::{RenderContext, RenderFrame},
   state::{Res, ResMut},
@@ -12,12 +17,34 @@ pub struct RendererModule;
 impl Module for RendererModule {
   fn build(&self, app: &mut App) {
     app
+      .add_handler(Init, Self::init)
       .add_handler(Update, Self::resize)
       .add_handler(Render, Self::render);
   }
 }
 
 impl RendererModule {
+  /// Initializes the basic structures and resources required for rendering.
+  ///
+  /// # Arguments
+  ///
+  /// * `commands` - A mutable reference to the [`Commands`] dispatcher.
+  /// * `ctx` - The rendering context used to initialize resources.
+  /// * `window` - The main window.
+  pub fn init(
+    mut commands: ResMut<Commands>,
+    ctx: Res<RenderContext>,
+    window: Res<Arc<Window>>,
+  ) {
+    let inner_size = window.inner_size();
+
+    commands.add_resource(Camera::new(
+      ctx.device(),
+      inner_size.width as f32 / inner_size.height as f32,
+      1.0,
+    ));
+  }
+
   /// Resizes the rendering context when the window is resized.
   ///
   /// # Arguments

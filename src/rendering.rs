@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-  app::{App, Commands, Init, Module},
+  app::{App, Commands, Module, PreInit},
   state::{Res, ResMut},
 };
 
@@ -209,7 +209,7 @@ pub struct RenderModule;
 
 impl Module for RenderModule {
   fn build(&self, app: &mut App) {
-    app.add_handler(Init, Self::init);
+    app.add_handler(PreInit, Self::pre_init);
   }
 }
 
@@ -220,7 +220,7 @@ impl RenderModule {
   ///
   /// * `commands` - A mutable reference to the [`Commands`] dispatcher.
   /// * `window` - The [`Arc<Window>`] representing the main window.
-  pub fn init(mut commands: ResMut<Commands>, window: Res<Arc<Window>>) {
+  pub fn pre_init(mut commands: ResMut<Commands>, window: Res<Arc<Window>>) {
     // Create a new instance of a wgpu instance to create our surface from the
     // newly created window and the adapter that will be used to create our
     // rendering context
