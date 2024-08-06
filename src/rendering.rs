@@ -1,11 +1,8 @@
-use std::sync::Arc;
-
 use crate::{
   app::{App, Commands, Module, PreInit},
   state::{Res, ResMut},
+  window::Window,
 };
-
-use winit::window::Window;
 
 /// A structure holding wgpu related structures for usage within the library.
 ///
@@ -219,15 +216,15 @@ impl RenderModule {
   /// # Arguments
   ///
   /// * `commands` - A mutable reference to the [`Commands`] dispatcher.
-  /// * `window` - The [`Arc<Window>`] representing the main window.
-  pub fn pre_init(mut commands: ResMut<Commands>, window: Res<Arc<Window>>) {
+  /// * `window` - The [`Window`] struct representing the main window.
+  pub fn pre_init(mut commands: ResMut<Commands>, window: Res<Window>) {
     // Create a new instance of a wgpu instance to create our surface from the
     // newly created window and the adapter that will be used to create our
     // rendering context
     let wgpu = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
 
     // Create a new wgpu surface from an active window handle.
-    let surface = wgpu.create_surface(Arc::clone(&*window)).unwrap();
+    let surface = wgpu.create_surface(window.clone()).unwrap();
 
     // Request an adapter that is compatible with the newly created surface and
     // that ideally is a discrete GPU with high performance

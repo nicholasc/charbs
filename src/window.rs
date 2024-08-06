@@ -10,7 +10,7 @@ use winit::{
   application::ApplicationHandler,
   event::{StartCause, WindowEvent},
   event_loop::{self, ActiveEventLoop, ControlFlow, EventLoop},
-  window::{Window, WindowAttributes},
+  window::{Window as WinitWindow, WindowAttributes},
 };
 
 /// A private schedule label that represents when the window is being redrawn.
@@ -48,6 +48,39 @@ impl Module for WindowModule {
   }
 }
 
+pub struct Window {
+  inner: Arc<WinitWindow>,
+}
+
+impl Window {
+  /// Creates a new [`Window`] from an existing [`WinitWindow`].
+  ///
+  /// # Arguments
+  ///
+  /// * `window` - The existing [`WinitWindow`] to create the new [`Window`].
+  ///
+  /// * `->` - A new [`Window`] that wraps the given [`WinitWindow`].
+  pub fn new(window: WinitWindow) -> Self {
+    Self {
+      inner: Arc::new(window),
+    }
+  }
+
+  /// Returns an atomically reference counted pointer to the inner
+  /// [`WinitWindow`] .
+  pub fn clone(&self) -> Arc<WinitWindow> {
+    self.inner.clone()
+  }
+}
+
+impl std::ops::Deref for Window {
+  type Target = WinitWindow;
+
+  fn deref(&self) -> &Self::Target {
+    &self.inner
+  }
+}
+
 /// A winit application that manages a window.
 pub struct WindowApp {
   app: App,
@@ -72,30 +105,24 @@ impl ApplicationHandler<()> for WindowApp {
     // This avoids jittery redraws when window is being resized or moved
     if cause == StartCause::Poll {
       if let Ok(state) = self.app.state.try_lock() {
-        state.get::<Res<Arc<Window>>>().request_redraw();
+        state.get::<Res<Window>>().request_redraw();
       }
     }
   }
 
   fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
-    // Create the application window
-    let window = Arc::new(
+    // Create the application window as a resource
+    self.app.add_resource(Window::new(
       event_loop
         .create_window(WindowAttributes::default())
         .unwrap(),
-    );
-
-    // Store a reference to it as a resource
-    self.app.add_resource(Arc::clone(&window));
+    ));
 
     // Initialize the application & run pre-init commands
     self.app.run_schedule(PreInit);
 
     // Initialize the application & run init commands
     self.app.run_schedule(Init);
-
-    // Request a first draw
-    window.request_redraw();
   }
 
   fn window_event(

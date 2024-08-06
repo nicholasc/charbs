@@ -1,14 +1,10 @@
-use std::sync::Arc;
-
-use winit::window::Window;
-
 use crate::{
   app::{App, Commands, Init, Module, Update},
   camera::Camera,
   events::EventBus,
   rendering::{RenderContext, RenderFrame},
   state::{Res, ResMut},
-  window::{Render, WindowResized},
+  window::{Render, Window, WindowResized},
 };
 
 /// A module that manages a renderer
@@ -34,7 +30,7 @@ impl RendererModule {
   pub fn init(
     mut commands: ResMut<Commands>,
     ctx: Res<RenderContext>,
-    window: Res<Arc<Window>>,
+    window: Res<Window>,
   ) {
     let inner_size = window.inner_size();
 
