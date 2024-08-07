@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::HashMap};
 
 /// A structure that encapsulates a vertex shader, a fragment shader and
 /// bindings to the uniforms they rely on.
@@ -23,5 +23,16 @@ impl Shader {
     });
 
     Self { inner }
+  }
+}
+
+#[derive(Default)]
+pub struct Shaders<'a> {
+  data: HashMap<&'a str, Shader>,
+}
+
+impl<'a> Shaders<'a> {
+  pub fn add(&mut self, label: &'a str, shader: Shader) {
+    self.data.insert(label, shader);
   }
 }

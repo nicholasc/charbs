@@ -1,5 +1,6 @@
 use crate::{
   app::{App, Commands, Module, PreInit},
+  shader::Shaders,
   state::{Res, ResMut},
   window::Window,
 };
@@ -206,7 +207,9 @@ pub struct RenderModule;
 
 impl Module for RenderModule {
   fn build(&self, app: &mut App) {
-    app.add_handler(PreInit, Self::pre_init);
+    app
+      .add_resource(Shaders::default())
+      .add_handler(PreInit, Self::pre_init);
   }
 }
 

@@ -1,12 +1,23 @@
+use std::{
+  fs::{read_to_string, File},
+  io::Read,
+};
+
 use crate::{
+  app::{App, Init, Module},
   binding::{BindGroup, Uniform},
+  prelude::RenderContext,
+  shader::{Shader, Shaders},
+  state::{Res, ResMut},
   texture::Texture,
 };
 use encase::ShaderType;
 
 /// A trait that represents a material.
 pub trait Material {
-  fn shader(&self) -> String;
+  fn shader() -> &'static str;
+
+  // TODO: Could be replaced by #[] macro to simplify bindings definition
   fn bind_group(&self) -> &BindGroup;
 }
 
@@ -73,8 +84,8 @@ impl ColorMaterial {
 }
 
 impl Material for ColorMaterial {
-  fn shader(&self) -> String {
-    "charbs::shader::color".to_string()
+  fn shader() -> &'static str {
+    "shaders/color.wgsl"
   }
 
   fn bind_group(&self) -> &BindGroup {
@@ -93,10 +104,10 @@ impl TextureMaterial {
   /// # Arguments
   ///
   /// * `device` - The [`wgpu::Device`] to use when creating the material.
-  /// * `texture` - The texture to use as a material.
+  /// * `texture` - The [`Texture`] to use as a material.
   ///
   /// * `->` - A new [`TextureMaterial`] instance ready to be used in a mesh.
-  pub fn new<P>(device: &wgpu::Device, texture: Texture) -> Self
+  pub fn new<P>(device: &wgpu::Device, texture: &Texture) -> Self
   where
     P: AsRef<std::path::Path>,
   {
@@ -107,11 +118,28 @@ impl TextureMaterial {
 }
 
 impl Material for TextureMaterial {
-  fn shader(&self) -> String {
-    "charbs::shader::texture".to_string()
+  fn shader() -> &'static str {
+    "shaders/texture.wgsl"
   }
 
   fn bind_group(&self) -> &BindGroup {
     &self.bind_group
+  }
+}
+
+pub struct DefaultMaterials;
+
+impl Module for DefaultMaterials {
+  fn build(&self, app: &mut App) {
+    app.add_handler(Init, Self::pre_init);
+  }
+}
+
+impl DefaultMaterials {
+  fn pre_init(ctx: Res<RenderContext>, mut shaders: ResMut<Shaders>) {
+    shaders.add(
+      ColorMaterial::shader(),
+      Shader::new(ctx.device(), include_str!("shaders/color.wgsl")),
+    );
   }
 }
