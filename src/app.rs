@@ -67,9 +67,9 @@ impl App {
     let runner = std::mem::replace(&mut self.runner, default_runner);
     let mut app = std::mem::take(self);
 
-    // Create the initial app resources.
-    app.add_resource(Commands::default());
-    app.add_resource(EventBus::default());
+    // Create the initial app state.
+    app.add_state(Commands::default());
+    app.add_state(EventBus::default());
 
     // Up, up and away!
     (runner)(app);
@@ -138,16 +138,16 @@ impl App {
     self
   }
 
-  /// Add a resource to the application's [`State`].
+  /// Add a structure to the application's [`State`].
   ///
   /// # Arguments
   ///
-  /// * `resource` - The resource to add to the [`State`].
+  /// * `structure` - The object to add to the [`State`].
   ///
   /// * `->` - A mutable reference to the [`App`].
-  pub fn add_resource<R: 'static>(&mut self, resource: R) -> &mut Self {
+  pub fn add_state<R: 'static>(&mut self, structure: R) -> &mut Self {
     if let Ok(mut state) = self.state.try_lock() {
-      state.add_resource(resource);
+      state.add(structure);
     }
 
     self
@@ -182,15 +182,15 @@ pub struct Commands {
 }
 
 impl Commands {
-  /// Add a resource to the application's [`State`].
+  /// Add a structure to the application's [`State`].
   ///
   /// # Arguments
   ///
-  /// * `resource` - The resource to add to the [`State`].
+  /// * `object` - The object to add to the [`State`].
   ///
   /// * `->` - A mutable reference to the [`Commands`].
-  pub fn add_resource<R: 'static>(&mut self, resource: R) -> &mut Self {
-    self.state.add_resource(resource);
+  pub fn add_state<R: 'static>(&mut self, structure: R) -> &mut Self {
+    self.state.add(structure);
 
     self
   }

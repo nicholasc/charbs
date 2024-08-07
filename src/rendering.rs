@@ -208,7 +208,7 @@ pub struct RenderModule;
 impl Module for RenderModule {
   fn build(&self, app: &mut App) {
     app
-      .add_resource(Shaders::default())
+      .add_state(Shaders::default())
       .add_handler(PreInit, Self::pre_init);
   }
 }
@@ -263,6 +263,6 @@ impl RenderModule {
     ctx.resize(window.inner_size().width, window.inner_size().height);
 
     // Store in the internal state
-    commands.add_resource(ctx);
+    commands.add_state(ctx);
   }
 }

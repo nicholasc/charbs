@@ -5,7 +5,7 @@ struct MyModule;
 impl Module for MyModule {
   fn build(&self, app: &mut App) {
     app
-      .add_resource(0)
+      .add_state(0)
       .add_handler(Init, Self::init)
       .add_handler(Update, Self::update);
   }

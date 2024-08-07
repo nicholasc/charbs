@@ -18,7 +18,7 @@ fn main() {
   let mut i = 0;
 
   let mut state = State::default();
-  state.add_resource("Hello, world!");
+  state.add("Hello, world!");
 
   let mut scheduler = Scheduler::default();
   scheduler.add_handler(Init, init);

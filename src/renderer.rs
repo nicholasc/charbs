@@ -34,7 +34,7 @@ impl RendererModule {
   ) {
     let inner_size = window.inner_size();
 
-    commands.add_resource(Camera::new(
+    commands.add_state(Camera::new(
       ctx.device(),
       inner_size.width as f32 / inner_size.height as f32,
       1.0,

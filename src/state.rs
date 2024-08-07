@@ -8,9 +8,9 @@ use std::{
   ops::{Deref, DerefMut},
 };
 
-/// A container structure that assembles generic resources to compose a state.
+/// A container structure that assembles generic structures to compose a state.
 ///
-/// Resources can be virtually anything that a structure needs to store as part
+/// structures can be virtually anything that a structure needs to store as part
 /// of the state of a larger structure.
 ///
 /// This is intended to be used in conjunction with a [`Scheduler`] as input
@@ -18,20 +18,20 @@ use std::{
 /// the creation of complex and independent systems that can easily co-exist.
 #[derive(Debug, Default)]
 pub struct State {
-  resources: HashMap<TypeId, RefCell<Box<dyn Any>>>,
+  structures: HashMap<TypeId, RefCell<Box<dyn Any>>>,
 }
 
 impl State {
-  /// Adds a new generic resource to the state container.
+  /// Adds a new generic structure to the state container.
   ///
   /// # Arguments
   ///
-  /// * `resource` - The resource of type `R` to be added.
-  pub fn add_resource<R: 'static>(&mut self, resource: R) {
+  /// * `structure` - The structure of type `R` to be added.
+  pub fn add<R: 'static>(&mut self, structure: R) {
     let key = TypeId::of::<R>();
-    let value = RefCell::new(Box::new(resource));
+    let value = RefCell::new(Box::new(structure));
 
-    self.resources.insert(key, value);
+    self.structures.insert(key, value);
   }
 
   /// Merges another state into this one.
@@ -41,45 +41,45 @@ impl State {
   /// * `state` - The [`State`] to be merged into this one.
   pub fn merge(&mut self, state: &mut Self) {
     for (key, value) in state.drain() {
-      self.resources.insert(key, value);
+      self.structures.insert(key, value);
     }
   }
 
-  /// Returns a generic resource from the state container.
+  /// Returns a generic structure from the state container.
   ///
-  /// Requested resource must be wrapped with a [`Res`] or [`ResMut`] to get a
+  /// Requested structure must be wrapped with a [`Res`] or [`ResMut`] to get a
   /// read-only reference or one with mutability.
   ///
   /// # Arguments
   ///
-  /// * `->` - A read-only or mutable reference to the requested resource.
+  /// * `->` - A read-only or mutable reference to the requested structure.
   pub fn get<R: HandlerParam + 'static>(&self) -> <R as HandlerParam>::Item<'_> {
-    R::retrieve(&self.resources)
+    R::retrieve(&self.structures)
   }
 
-  /// Returns a read-only reference to all the resources within the state
+  /// Returns a read-only reference to all the structures within the state
   /// container.
   pub fn all(&self) -> &HashMap<TypeId, RefCell<Box<dyn Any>>> {
-    &self.resources
+    &self.structures
   }
 
-  /// Returns a mutable reference to all the resources within the state
+  /// Returns a mutable reference to all the structures within the state
   /// container.
   pub fn all_mut(&mut self) -> &mut HashMap<TypeId, RefCell<Box<dyn Any>>> {
-    &mut self.resources
+    &mut self.structures
   }
 
-  /// Drains all resources from the state container and returns them as a vector
-  /// containing a tuple with the type ID and the resource.
+  /// Drains all structures from the state container and returns them as a vector
+  /// containing a tuple with the type ID and the structure.
   ///
-  /// Useful to easily clear the state container and re-use the resources
+  /// Useful to easily clear the state container and re-use the structures
   /// somewhere else.
   ///
   /// # Arguments
   ///
-  /// * `->` - A vector of tuples containing the type ID and the resource.
+  /// * `->` - A vector of tuples containing the type ID and the structure.
   pub fn drain(&mut self) -> Vec<(TypeId, RefCell<Box<dyn Any>>)> {
-    self.resources.drain().collect()
+    self.structures.drain().collect()
   }
 }
 
@@ -91,31 +91,31 @@ pub trait Handler {
   ///
   /// # Arguments
   ///
-  /// * `resources` - A mutable reference to a [`HashMap`] of resources.
-  fn run(&mut self, resources: &mut HashMap<TypeId, RefCell<Box<dyn Any>>>);
+  /// * `structures` - A mutable reference to a [`HashMap`] of structures.
+  fn run(&mut self, structures: &mut HashMap<TypeId, RefCell<Box<dyn Any>>>);
 }
 
 /// A trait that represents a valid parameter a generic handler function can
 /// be injected with. By default, two structures implement this:
 ///
-/// [`Res`]: Access a read-only reference to a resource.
-/// [`ResMut`]: Access a mutable reference to a resource.
+/// [`Res`]: Access a read-only reference to a structure.
+/// [`ResMut`]: Access a mutable reference to a structure.
 pub trait HandlerParam {
   /// Provides a copy of the struct with a new lifetime.
   type Item<'new>;
 
-  /// Retrieves a reference to a resource and wraps it in a new [`Self::Item`].
+  /// Retrieves a reference to a structure and wraps it in a new [`Self::Item`].
   ///
   /// # Arguments
   ///
-  /// * `resources` - A reference to the injectable resources instance.
+  /// * `structures` - A reference to the injectable structures instance.
   ///
-  /// * `->` - A reference to the injectable resource.
-  fn retrieve(resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_>;
+  /// * `->` - A reference to the injectable structure.
+  fn retrieve(structures: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_>;
 }
 
 /// A structure representing the actual handler function that will be executed
-/// with injected resources.
+/// with injected structures.
 pub struct HandlerFunction<Input, F> {
   f: F,
   marker: PhantomData<fn() -> Input>,
@@ -135,13 +135,13 @@ macro_rules! impl_handler {
         for<'a, 'b> &'a mut F: FnMut($($p),*) +
           FnMut($(<$p as HandlerParam>::Item<'b>),*)
     {
-      fn run(&mut self, resources: &mut HashMap<TypeId, RefCell<Box<dyn Any>>>) {
+      fn run(&mut self, structures: &mut HashMap<TypeId, RefCell<Box<dyn Any>>>) {
         #[allow(clippy::too_many_arguments)]
         fn call_inner<$($p),*>(mut f: impl FnMut($($p),*), $($p: $p),*) {
           f($($p),*)
         }
 
-        $(let $p= $p::retrieve(resources);)*
+        $(let $p= $p::retrieve(structures);)*
 
         call_inner(&mut self.f, $($p),*)
       }
@@ -171,7 +171,7 @@ pub trait IntoHandler<Input> {
   ///
   /// # Arguments
   ///
-  /// * `->` - A [`Handler`] ready to be injected with resources.
+  /// * `->` - A [`Handler`] ready to be injected with structures.
   fn into_handler(self) -> Self::Handler;
 }
 
@@ -210,13 +210,13 @@ impl_into_handler!(T1, T2, T3, T4, T5, T6, T7, T8);
 impl_into_handler!(T1, T2, T3, T4, T5, T6, T7, T8, T9);
 impl_into_handler!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10);
 
-/// A struct that represents a read-only reference to a resource.
+/// A struct that represents a read-only reference to a structure.
 pub struct Res<'a, T: 'static> {
   value: Ref<'a, Box<dyn Any>>,
   _marker: PhantomData<&'a T>,
 }
 
-/// Allow access to a read-only reference to the underlying resource.
+/// Allow access to a read-only reference to the underlying structure.
 impl<T: 'static> Deref for Res<'_, T> {
   type Target = T;
 
@@ -229,24 +229,24 @@ impl<'res, T: 'static> HandlerParam for Res<'res, T> {
   /// Provides a copy of the struct with a new lifetime.
   type Item<'new> = Res<'new, T>;
 
-  fn retrieve(resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_> {
+  fn retrieve(structures: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_> {
     Res {
-      value: resources
+      value: structures
         .get(&TypeId::of::<T>())
-        .expect("Cannot find resource.")
+        .expect("Cannot find structure.")
         .borrow(),
       _marker: PhantomData,
     }
   }
 }
 
-/// A struct that represents a mutable reference to a resource.
+/// A struct that represents a mutable reference to a structure.
 pub struct ResMut<'a, T: 'static> {
   value: RefMut<'a, Box<dyn Any>>,
   _marker: PhantomData<&'a mut T>,
 }
 
-/// Allow access to a read-only reference to the underlying resource.
+/// Allow access to a read-only reference to the underlying structure.
 impl<T: 'static> Deref for ResMut<'_, T> {
   type Target = T;
 
@@ -255,7 +255,7 @@ impl<T: 'static> Deref for ResMut<'_, T> {
   }
 }
 
-/// Allow access to a mutable reference to the underlying resource.
+/// Allow access to a mutable reference to the underlying structure.
 impl<T: 'static> DerefMut for ResMut<'_, T> {
   fn deref_mut(&mut self) -> &mut T {
     self.value.downcast_mut().unwrap()
@@ -266,16 +266,16 @@ impl<'res, T: 'static> HandlerParam for ResMut<'res, T> {
   /// Provides a copy of the struct with a new lifetime.
   type Item<'new> = ResMut<'new, T>;
 
-  fn retrieve(resources: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_> {
+  fn retrieve(structures: &HashMap<TypeId, RefCell<Box<dyn Any>>>) -> Self::Item<'_> {
     ResMut {
-      value: resources.get(&TypeId::of::<T>()).unwrap().borrow_mut(),
+      value: structures.get(&TypeId::of::<T>()).unwrap().borrow_mut(),
       _marker: PhantomData,
     }
   }
 }
 
 /// A structure that allows the storage of [`Handler`] functions to be executed
-/// with dynamically injected resources.
+/// with dynamically injected structures.
 ///
 /// This is intended to be used in conjunction with a [`Scheduler`] as a
 /// mechanism to execute specific functions ([`Handler`]s) at the specific
@@ -291,17 +291,17 @@ pub(crate) struct Schedule {
 
 impl Schedule {
   /// Executes all [`Handler`]s that have been added to the [`Schedule`] and
-  /// allow them to use specific resources from a [`State`].
+  /// allow them to use specific structures from a [`State`].
   ///
   /// # Arguments
   ///
   /// * `state` - A mutable reference to a [`State`].
   pub fn run(&mut self, state: &mut State) {
-    let resources = state.all_mut();
+    let structures = state.all_mut();
 
     // Run the handlers in order.
     for handler in self.handlers.iter_mut() {
-      handler.run(resources);
+      handler.run(structures);
     }
   }
 

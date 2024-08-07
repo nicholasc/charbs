@@ -112,7 +112,7 @@ impl ApplicationHandler<()> for WindowApp {
 
   fn resumed(&mut self, event_loop: &event_loop::ActiveEventLoop) {
     // Create the application window as a resource
-    self.app.add_resource(Window::new(
+    self.app.add_state(Window::new(
       event_loop
         .create_window(WindowAttributes::default())
         .unwrap(),
