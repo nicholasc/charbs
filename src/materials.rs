@@ -1,23 +1,30 @@
-use std::{
-  fs::{read_to_string, File},
-  io::Read,
-};
-
 use crate::{
   app::{App, Init, Module},
   binding::{BindGroup, Uniform},
   prelude::RenderContext,
-  shader::{Shader, Shaders},
+  shader::{Shader, ShaderId, Shaders},
   state::{Res, ResMut},
   texture::Texture,
 };
+
 use encase::ShaderType;
 
 /// A trait that represents a material.
 pub trait Material {
-  fn shader() -> &'static str;
+  /// Returns the shader id associated with this material.
+  ///
+  /// # Arguments
+  ///
+  /// * `->` - The shader id associated with this material.
+  fn shader() -> ShaderId;
 
-  // TODO: Could be replaced by #[] macro to simplify bindings definition
+  /// Returns the bind group associated with this material.
+  ///
+  /// TODO: Could eventually be replaced by #[] macro to simplify bindings definition.
+  ///
+  /// # Arguments
+  ///
+  /// * `->` - The bind group associated with this material.
   fn bind_group(&self) -> &BindGroup;
 }
 
@@ -36,10 +43,10 @@ pub struct ColorMaterial {
 }
 
 impl ColorMaterial {
-  // TODO: Move these to the Color struct and use it to build the material
-  // instead.
   /// Creates a new color material from red, green and blue channels. Expected
   /// color values are shader compatible (between 0.0 and 1.0).
+  ///
+  /// TODO: Move these to the Color struct and use it to build the material instead.
   ///
   /// # Arguments
   ///
@@ -84,8 +91,8 @@ impl ColorMaterial {
 }
 
 impl Material for ColorMaterial {
-  fn shader() -> &'static str {
-    "shaders/color.wgsl"
+  fn shader() -> ShaderId {
+    "shaders/color.wgsl".into()
   }
 
   fn bind_group(&self) -> &BindGroup {
@@ -118,8 +125,8 @@ impl TextureMaterial {
 }
 
 impl Material for TextureMaterial {
-  fn shader() -> &'static str {
-    "shaders/texture.wgsl"
+  fn shader() -> ShaderId {
+    "shaders/texture.wgsl".into()
   }
 
   fn bind_group(&self) -> &BindGroup {
@@ -140,6 +147,11 @@ impl DefaultMaterials {
     shaders.add(
       ColorMaterial::shader(),
       Shader::new(ctx.device(), include_str!("shaders/color.wgsl")),
+    );
+
+    shaders.add(
+      TextureMaterial::shader(),
+      Shader::new(ctx.device(), include_str!("shaders/texture.wgsl")),
     );
   }
 }

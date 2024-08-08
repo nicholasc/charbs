@@ -1,9 +1,24 @@
-use std::{borrow::Cow, collections::HashMap};
+use crate::resources::{ResourceId, Resources};
+
+use std::borrow::Cow;
+
+///
+pub type ShaderId = ResourceId<Shader>;
+
+pub type Shaders = Resources<Shader>;
 
 /// A structure that encapsulates a vertex shader, a fragment shader and
 /// bindings to the uniforms they rely on.
 pub struct Shader {
   inner: wgpu::ShaderModule,
+}
+
+impl Eq for Shader {}
+
+impl PartialEq for Shader {
+  fn eq(&self, other: &Self) -> bool {
+    self.inner.global_id() == other.inner.global_id()
+  }
 }
 
 impl Shader {
@@ -23,16 +38,5 @@ impl Shader {
     });
 
     Self { inner }
-  }
-}
-
-#[derive(Default)]
-pub struct Shaders<'a> {
-  data: HashMap<&'a str, Shader>,
-}
-
-impl<'a> Shaders<'a> {
-  pub fn add(&mut self, label: &'a str, shader: Shader) {
-    self.data.insert(label, shader);
   }
 }
