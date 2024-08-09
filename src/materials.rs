@@ -2,12 +2,17 @@ use crate::{
   app::{App, Init, Module},
   binding::{BindGroup, Uniform},
   prelude::RenderContext,
+  resources::{ResourceId, Resources},
   shader::{Shader, ShaderId, Shaders},
   state::{Res, ResMut},
   texture::Texture,
 };
 
 use encase::ShaderType;
+
+pub type MaterialId = ResourceId<Box<dyn Material>>;
+
+pub type Materials = Resources<Box<dyn Material>>;
 
 /// A trait that represents a material.
 pub trait Material {
@@ -16,11 +21,14 @@ pub trait Material {
   /// # Arguments
   ///
   /// * `->` - The shader id associated with this material.
-  fn shader() -> ShaderId;
+  fn shader() -> ShaderId
+  where
+    Self: Sized;
 
   /// Returns the bind group associated with this material.
   ///
-  /// TODO: Could eventually be replaced by #[] macro to simplify bindings definition.
+  /// TODO: Could eventually be replaced by #[] macro to simplify bindings
+  /// definition.
   ///
   /// # Arguments
   ///
@@ -46,7 +54,8 @@ impl ColorMaterial {
   /// Creates a new color material from red, green and blue channels. Expected
   /// color values are shader compatible (between 0.0 and 1.0).
   ///
-  /// TODO: Move these to the Color struct and use it to build the material instead.
+  /// TODO: Move these to the Color struct and use it to build the material
+  /// instead.
   ///
   /// # Arguments
   ///

@@ -1,5 +1,7 @@
 use crate::{
   app::{App, Commands, Module, PreInit},
+  geometry::Geometries,
+  materials::Materials,
   shader::Shaders,
   state::{Res, ResMut},
   window::Window,
@@ -60,6 +62,8 @@ impl RenderContext {
         .unwrap(),
     );
   }
+
+  pub fn register_resource<T>(&self, resource: T) {}
 
   /// Returns a read-only reference to the wgpu adapter.
   pub fn adapter(&self) -> &wgpu::Adapter {
@@ -209,6 +213,8 @@ impl Module for RenderModule {
   fn build(&self, app: &mut App) {
     app
       .add_state(Shaders::default())
+      .add_state(Geometries::default())
+      .add_state(Materials::default())
       .add_handler(PreInit, Self::pre_init);
   }
 }

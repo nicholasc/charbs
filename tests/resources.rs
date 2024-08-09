@@ -69,4 +69,21 @@ mod tests {
 
     assert_ne!(hash1, hash2);
   }
+
+  #[test]
+  fn resource_id_hash_not_eq_box() {
+    let id1 = ResourceId::<Box<TestResource>>::new("texture");
+    let id2 = ResourceId::<Box<TestResource2>>::new("texture");
+
+    let mut state1 = DefaultHasher::new();
+    let mut state2 = DefaultHasher::new();
+
+    id1.hash(&mut state1);
+    id2.hash(&mut state2);
+
+    let hash1 = state1.finish();
+    let hash2 = state2.finish();
+
+    assert_ne!(hash1, hash2);
+  }
 }

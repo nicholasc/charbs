@@ -1,6 +1,13 @@
-use crate::buffer::Buffer;
+use crate::{
+  buffer::Buffer,
+  resources::{ResourceId, Resources},
+};
 
 use bytemuck::{Pod, Zeroable};
+
+pub type GeometryId = ResourceId<Box<dyn Geometry>>;
+
+pub type Geometries = Resources<Box<dyn Geometry>>;
 
 // A structure that represents a single Vertex buffer for the gpu.
 #[repr(C)]

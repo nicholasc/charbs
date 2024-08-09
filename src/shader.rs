@@ -39,4 +39,9 @@ impl Shader {
 
     Self { inner }
   }
+
+  /// Returns a reference to the inner wgpu shader module.
+  pub fn inner(&self) -> &wgpu::ShaderModule {
+    &self.inner
+  }
 }
