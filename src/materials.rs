@@ -1,18 +1,10 @@
 use crate::{
-  app::{App, Init, Module},
+  app::{App, Module},
   binding::{BindGroup, Uniform},
-  prelude::RenderContext,
-  resources::{ResourceId, Resources},
-  shader::{Shader, ShaderId, Shaders},
-  state::{Res, ResMut},
   texture::Texture,
 };
 
 use encase::ShaderType;
-
-pub type MaterialId = ResourceId<Box<dyn Material>>;
-
-pub type Materials = Resources<Box<dyn Material>>;
 
 /// A trait that represents a material.
 pub trait Material {
@@ -21,9 +13,7 @@ pub trait Material {
   /// # Arguments
   ///
   /// * `->` - The shader id associated with this material.
-  fn shader() -> ShaderId
-  where
-    Self: Sized;
+  fn shader() -> &'static str;
 
   /// Returns the bind group associated with this material.
   ///
@@ -100,8 +90,8 @@ impl ColorMaterial {
 }
 
 impl Material for ColorMaterial {
-  fn shader() -> ShaderId {
-    "shaders/color.wgsl".into()
+  fn shader() -> &'static str {
+    "shaders/color.wgsl"
   }
 
   fn bind_group(&self) -> &BindGroup {
@@ -134,33 +124,11 @@ impl TextureMaterial {
 }
 
 impl Material for TextureMaterial {
-  fn shader() -> ShaderId {
-    "shaders/texture.wgsl".into()
+  fn shader() -> &'static str {
+    "shaders/texture.wgsl"
   }
 
   fn bind_group(&self) -> &BindGroup {
     &self.bind_group
-  }
-}
-
-pub struct DefaultMaterials;
-
-impl Module for DefaultMaterials {
-  fn build(&self, app: &mut App) {
-    app.add_handler(Init, Self::pre_init);
-  }
-}
-
-impl DefaultMaterials {
-  fn pre_init(ctx: Res<RenderContext>, mut shaders: ResMut<Shaders>) {
-    shaders.add(
-      ColorMaterial::shader(),
-      Shader::new(ctx.device(), include_str!("shaders/color.wgsl")),
-    );
-
-    shaders.add(
-      TextureMaterial::shader(),
-      Shader::new(ctx.device(), include_str!("shaders/texture.wgsl")),
-    );
   }
 }

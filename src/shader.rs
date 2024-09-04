@@ -1,11 +1,4 @@
-use crate::resources::{ResourceId, Resources};
-
 use std::borrow::Cow;
-
-///
-pub type ShaderId = ResourceId<Shader>;
-
-pub type Shaders = Resources<Shader>;
 
 /// A structure that encapsulates a vertex shader, a fragment shader and
 /// bindings to the uniforms they rely on.

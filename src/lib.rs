@@ -1,11 +1,12 @@
 pub mod app;
+pub mod assets;
 pub mod binding;
 pub mod buffer;
 pub mod camera;
 pub mod events;
-pub mod geometry;
 pub mod input;
 pub mod materials;
+pub mod math;
 pub mod mesh;
 pub mod prelude;
 pub mod renderer;

@@ -46,6 +46,7 @@ pub struct App {
   // This should be replaced by something more elegant.
   pub(crate) state: Arc<Mutex<State>>,
   scheduler: Arc<Mutex<Scheduler>>,
+  sub_apps: Vec<SubApp>,
   runner: RunnerFn,
 }
 
@@ -55,6 +56,7 @@ impl Default for App {
     Self {
       state: Default::default(),
       scheduler: Default::default(),
+      sub_apps: Vec::new(),
       runner: default_runner,
     }
   }
@@ -153,6 +155,12 @@ impl App {
     self
   }
 
+  pub fn add_sub_app(&mut self, sub_app: SubApp) -> &mut Self {
+    self.sub_apps.push(sub_app);
+
+    self
+  }
+
   /// Add a [`Module`] to the application.
   ///
   /// # Arguments
@@ -173,7 +181,14 @@ pub trait Module {
   /// # Arguments
   ///
   /// * `app` - A mutable reference to the [`App`].
+  /// //
   fn build(&self, app: &mut App);
+}
+
+pub struct SubApp {}
+
+impl SubApp {
+  fn configure(&self, app: &mut App) {}
 }
 
 #[derive(Default)]

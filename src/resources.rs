@@ -1,56 +1,26 @@
-use std::{
-  any::TypeId,
-  collections::HashMap,
-  hash::{Hash, Hasher},
-};
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct ResourceId<T> {
-  label: &'static str,
-  type_id: TypeId,
+pub struct ResourceHandle<T> {
+  index: usize,
   _marker: std::marker::PhantomData<T>,
 }
 
-impl<T: 'static> ResourceId<T> {
-  pub fn new(label: &'static str) -> Self {
-    ResourceId {
-      label,
-      type_id: TypeId::of::<T>(),
+#[derive(Default)]
+pub struct Resources<T> {
+  storage: Vec<T>,
+}
+
+impl<T> Resources<T> {
+  pub fn add(&mut self, resource: impl Into<T>) -> ResourceHandle<T> {
+    let index = self.storage.len();
+
+    self.storage.push(resource.into());
+
+    ResourceHandle {
+      index,
       _marker: std::marker::PhantomData,
     }
   }
-}
 
-impl<T> Hash for ResourceId<T> {
-  fn hash<H: Hasher>(&self, state: &mut H) {
-    self.label.hash(state);
-    self.type_id.hash(state);
-  }
-}
-
-impl<T: 'static> From<&'static str> for ResourceId<T> {
-  fn from(value: &'static str) -> Self {
-    Self::new(value)
-  }
-}
-
-pub struct Resources<T> {
-  resources: HashMap<ResourceId<T>, T>,
-}
-
-impl<T> Default for Resources<T> {
-  fn default() -> Self {
-    Self {
-      resources: HashMap::new(),
-    }
-  }
-}
-
-impl<T: 'static> Resources<T> {
-  pub fn add(&mut self, label: ResourceId<T>, resource: T)
-  where
-    T: Eq,
-  {
-    self.resources.insert(label, resource);
+  pub fn get(&self, handle: &ResourceHandle<T>) -> Option<&T> {
+    self.storage.get(handle.index)
   }
 }
