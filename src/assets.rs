@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct Asset {
   pub data: Vec<u8>,
 }
@@ -10,6 +11,7 @@ impl AsRef<str> for Asset {
   }
 }
 
+#[derive(Default)]
 pub struct Assets {
   storage: HashMap<&'static str, Asset>,
 }

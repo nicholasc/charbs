@@ -57,6 +57,10 @@ impl State {
     R::retrieve(&self.structures)
   }
 
+  pub fn has<R: 'static>(&self) -> bool {
+    self.structures.contains_key(&TypeId::of::<R>())
+  }
+
   /// Returns a read-only reference to all the structures within the state
   /// container.
   pub fn all(&self) -> &HashMap<TypeId, RefCell<Box<dyn Any>>> {

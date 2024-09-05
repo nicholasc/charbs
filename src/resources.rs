@@ -3,9 +3,16 @@ pub struct ResourceHandle<T> {
   _marker: std::marker::PhantomData<T>,
 }
 
-#[derive(Default)]
 pub struct Resources<T> {
   storage: Vec<T>,
+}
+
+impl<T> Default for Resources<T> {
+  fn default() -> Self {
+    Self {
+      storage: Vec::new(),
+    }
+  }
 }
 
 impl<T> Resources<T> {

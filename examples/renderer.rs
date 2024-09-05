@@ -1,4 +1,5 @@
 use charbs::{
+  app::Commands,
   materials::{ColorMaterial, DefaultMaterials},
   math::Rectangle,
   mesh::{Mesh, MeshInstance},
@@ -20,12 +21,13 @@ fn main() {
 
 pub fn init(
   ctx: Res<RenderContext>,
+  mut commands: ResMut<Commands>,
   mut meshes: ResMut<Resources<Mesh>>,
   mut materials: ResMut<Resources<ColorMaterial>>,
 ) {
-  let instance = MeshInstance {
+  commands.spawn(MeshInstance {
     mesh: meshes.add(Rectangle::new(0.5, 10.0)),
     material: materials.add(ColorMaterial::new(ctx.device(), 1.0, 0.0, 0.0)),
     transform: Transform::default(),
-  };
+  });
 }

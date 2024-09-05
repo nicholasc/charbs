@@ -1,5 +1,9 @@
 use crate::{
+  assets::Assets,
   events::EventBus,
+  materials::Material,
+  mesh::{MeshInstance, Meshbable},
+  resources::Resources,
   state::{Handler, IntoHandler, ResMut, ScheduleLabel, Scheduler, State},
 };
 
@@ -70,6 +74,7 @@ impl App {
     let mut app = std::mem::take(self);
 
     // Create the initial app state.
+    app.add_state(Assets::default());
     app.add_state(Commands::default());
     app.add_state(EventBus::default());
 
@@ -209,4 +214,6 @@ impl Commands {
 
     self
   }
+
+  pub fn spawn(&mut self, instance: impl Meshbable) {}
 }

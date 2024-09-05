@@ -123,3 +123,9 @@ pub struct MeshInstance<M: Material> {
   pub transform: Transform,
   // transform uniform should be here ?
 }
+
+pub struct Meshable {}
+
+impl<M: Material> Into<Meshable> for MeshInstance<M> {
+  fn into(self) -> Meshable {}
+}
