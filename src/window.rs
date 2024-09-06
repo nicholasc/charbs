@@ -68,7 +68,7 @@ impl Window {
 
   /// Returns an atomically reference counted pointer to the inner
   /// [`WinitWindow`] .
-  pub fn clone(&self) -> Arc<WinitWindow> {
+  pub fn arc(&self) -> Arc<WinitWindow> {
     self.inner.clone()
   }
 }

@@ -224,7 +224,7 @@ impl RenderModule {
     let wgpu = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
 
     // Create a new wgpu surface from an active window handle.
-    let surface = wgpu.create_surface(window.clone()).unwrap();
+    let surface = wgpu.create_surface(window.arc()).unwrap();
 
     // Request an adapter that is compatible with the newly created surface and
     // that ideally is a discrete GPU with high performance

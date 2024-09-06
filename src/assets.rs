@@ -19,9 +19,9 @@ pub struct Assets {
 impl Assets {
   #[inline]
   pub fn load(&mut self, path: &'static str) {
-    if self.storage.get(path).is_none() {
+    if !self.storage.contains_key(path) {
       self.storage.insert(
-        &path,
+        path,
         Asset {
           data: std::fs::read(path).unwrap(),
         },

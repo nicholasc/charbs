@@ -3,12 +3,11 @@ use crate::{
   assets::Assets,
   binding::{BindGroup, Uniform},
   buffer::Buffer,
-  camera::Camera,
-  mesh::{self, GPUMesh, Mesh, MeshInstance, Vertex},
+  mesh::{GPUMesh, Mesh, MeshInstance, Vertex},
   prelude::RenderContext,
   renderer::GlobalBindGroup,
   rendering::RenderFrame,
-  resources::{ResourceHandle, Resources},
+  resources::Resources,
   shader::Shader,
   state::{Res, ResMut},
   texture::Texture,
@@ -251,9 +250,7 @@ impl<M: Material> MaterialModule<M> {
       // TODO: Must store the pipeline and bind group for actual rendering.
       mesh_instances.push(GPUMesh {
         pipeline,
-        mesh: instance.mesh,
         material: instance.material,
-        transform_uniform,
         bind_group,
 
         vertex_buffer: Buffer::new_with_data(
@@ -276,7 +273,7 @@ impl<M: Material> MaterialModule<M> {
   /// # Arguments
   ///
   /// * `ctx` - The rendering context to render the frame.
-  pub fn render(
+  fn render(
     ctx: Res<RenderContext>,
     materials: Res<Resources<M>>,
     mesh_instances: Res<GPUMeshInstances<M>>,
