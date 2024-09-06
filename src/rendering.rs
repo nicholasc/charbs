@@ -168,7 +168,7 @@ impl RenderFrame {
 /// rendering functionalities to renderable objects.
 pub struct RenderPass<'a> {
   #[allow(unused)]
-  inner: wgpu::RenderPass<'a>,
+  pub inner: wgpu::RenderPass<'a>,
 }
 
 impl<'a> RenderPass<'a> {

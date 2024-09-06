@@ -1,8 +1,12 @@
 use crate::{
+  assets::Assets,
+  binding::{BindGroup, Uniform},
+  buffer::Buffer,
   materials::Material,
   math::{Circle, Rectangle, Triangle},
+  prelude::RenderContext,
   resources::ResourceHandle,
-  transform::Transform,
+  transform::{AffineTransform, Transform},
 };
 
 use bytemuck::{Pod, Zeroable};
@@ -39,8 +43,8 @@ impl Vertex {
 
 /// A trait representing a mesh geometry that can be rendered.
 pub struct Mesh {
-  vertices: Vec<Vertex>,
-  indices: Vec<u16>,
+  pub vertices: Vec<Vertex>,
+  pub indices: Vec<u16>,
 }
 
 impl From<Triangle> for Mesh {
@@ -124,8 +128,85 @@ pub struct MeshInstance<M: Material> {
   // transform uniform should be here ?
 }
 
-pub struct Meshable {}
+pub struct GPUMesh<M: Material> {
+  pub mesh: ResourceHandle<Mesh>,
+  pub material: ResourceHandle<M>,
+  pub pipeline: wgpu::RenderPipeline,
+  pub transform_uniform: Uniform<AffineTransform>,
+  pub bind_group: BindGroup,
 
-impl<M: Material> Into<Meshable> for MeshInstance<M> {
-  fn into(self) -> Meshable {}
+  pub vertex_buffer: Buffer<Vertex>,
+  pub index_buffer: Buffer<u16>,
+}
+
+pub trait Meshable {
+  fn prepare(&self, ctx: RenderContext, assets: &Assets);
+}
+
+impl<M: Material> Meshable for MeshInstance<M> {
+  fn prepare(&self, ctx: RenderContext, mut assets: &Assets) {
+    // let device = ctx.device();
+    // let surface = ctx.surface();
+    // let adapter = ctx.adapter();
+
+    // let transform_uniform = Uniform::new(device,
+    // AffineTransform::from(self.transform)); let bind_group =
+    // BindGroup::new(device, vec![&transform_uniform]);
+
+    // let material = materials.get(&instance.material).unwrap();
+    // let shader_source = assets.get(M::shader());
+    // let shader = Shader::new(device, shader_source.as_ref());
+
+    // // Create the pipeline layout for the mesh
+    // let pipeline_layout =
+    //   device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+    //     label: None,
+    //     bind_group_layouts: &[bind_group.layout(),
+    // material.bind_group().layout()],     push_constant_ranges: &[],
+    //   });
+
+    // // Create the vertex state
+    // let vertex = wgpu::VertexState {
+    //   entry_point: "vertex_main",
+    //   module: shader.inner(),
+    //   buffers: &[Vertex::buffer_layout()],
+    //   compilation_options: wgpu::PipelineCompilationOptions::default(),
+    // };
+
+    // // Create the targets for the fragment
+    // // TODO: Should most likely be configurable in a material description?
+    // let targets = [Some(wgpu::ColorTargetState {
+    //   format: *surface.get_capabilities(adapter).formats.first().unwrap(),
+    //   blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+    //   write_mask: wgpu::ColorWrites::ALL,
+    // })];
+
+    // // Create the fragment state
+    // let fragment = Some(wgpu::FragmentState {
+    //   entry_point: "fragment_main",
+    //   module: shader.inner(),
+    //   targets: &targets,
+    //   compilation_options: wgpu::PipelineCompilationOptions::default(),
+    // });
+
+    // // Create the render pipeline using the layout and the material
+    // let pipeline =
+    // device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    //   label: None,
+    //   layout: Some(&pipeline_layout),
+    //   vertex,
+    //   fragment,
+    //   multiview: None,
+    //   depth_stencil: None,
+    //   cache: None,
+    //   primitive: wgpu::PrimitiveState::default(),
+    //   multisample: wgpu::MultisampleState::default(),
+    // });
+  }
+}
+
+impl<M: Material> Into<Box<dyn Meshable>> for MeshInstance<M> {
+  fn into(self) -> Box<dyn Meshable> {
+    Box::new(self)
+  }
 }

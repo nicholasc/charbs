@@ -1,8 +1,8 @@
 use crate::{
   assets::Assets,
   events::EventBus,
-  materials::Material,
-  mesh::{MeshInstance, Meshbable},
+  materials::{Material, MeshInstancesToSpawn},
+  mesh::{MeshInstance, Meshable},
   resources::Resources,
   state::{Handler, IntoHandler, ResMut, ScheduleLabel, Scheduler, State},
 };
@@ -215,5 +215,14 @@ impl Commands {
     self
   }
 
-  pub fn spawn(&mut self, instance: impl Meshbable) {}
+  pub fn spawn<M: Material>(&mut self, instance: MeshInstance<M>) {
+    if !self.state.has::<MeshInstancesToSpawn<M>>() {
+      self.state.add(MeshInstancesToSpawn::<M>::default());
+    }
+
+    self
+      .state
+      .get::<ResMut<MeshInstancesToSpawn<M>>>()
+      .push(instance);
+  }
 }

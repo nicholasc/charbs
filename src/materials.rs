@@ -2,13 +2,18 @@ use crate::{
   app::{App, Module, Update},
   assets::Assets,
   binding::{BindGroup, Uniform},
-  mesh::{MeshInstance, Vertex},
+  buffer::Buffer,
+  camera::Camera,
+  mesh::{self, GPUMesh, Mesh, MeshInstance, Vertex},
   prelude::RenderContext,
-  resources::Resources,
+  renderer::GlobalBindGroup,
+  rendering::RenderFrame,
+  resources::{ResourceHandle, Resources},
   shader::Shader,
   state::{Res, ResMut},
   texture::Texture,
   transform::AffineTransform,
+  window::Render,
 };
 
 use encase::ShaderType;
@@ -16,6 +21,9 @@ use encase::ShaderType;
 /// A trait that represents a material.
 pub trait Material: 'static {
   /// Returns the shader id associated with this material.
+  ///
+  /// TODO: Would be great to return a ShaderSource that could be built from
+  /// a string but also actual source code.
   ///
   /// # Arguments
   ///
@@ -156,74 +164,165 @@ impl<M: Material> Module for MaterialModule<M> {
   fn build(&self, app: &mut App) {
     app
       .add_state(Resources::<M>::default())
-      .add_handler(Update, Self::update);
+      .add_state(MeshInstancesToSpawn::<M>::default())
+      .add_state(GPUMeshInstances::<M>::default())
+      .add_handler(Update, Self::update)
+      .add_handler(Render, Self::render);
   }
 }
+
+pub(crate) type MeshInstancesToSpawn<M> = Vec<MeshInstance<M>>;
+
+pub(crate) type GPUMeshInstances<M> = Vec<GPUMesh<M>>;
 
 impl<M: Material> MaterialModule<M> {
   fn update(
     ctx: Res<RenderContext>,
     mut assets: ResMut<Assets>,
+    meshes: Res<Resources<Mesh>>,
     materials: Res<Resources<M>>,
-    // instance: Res<MeshInstance<M>>,
+    mut instances: ResMut<MeshInstancesToSpawn<M>>,
+    mut mesh_instances: ResMut<GPUMeshInstances<M>>,
+    globals: Res<GlobalBindGroup>,
   ) {
-    dbg!("BOINK");
-    // let device = ctx.device();
-    // let surface = ctx.surface();
-    // let adapter = ctx.adapter();
+    let device = ctx.device();
+    let surface = ctx.surface();
+    let adapter = ctx.adapter();
 
-    // let transform_uniform =
-    //   Uniform::new(device, AffineTransform::from(instance.transform));
-    // let bind_group = BindGroup::new(device, vec![&transform_uniform]);
+    for instance in instances.drain(..) {
+      let transform_uniform =
+        Uniform::new(device, AffineTransform::from(instance.transform));
+      let bind_group = BindGroup::new(device, vec![&transform_uniform]);
 
-    // let material = materials.get(&instance.material).unwrap();
-    // let shader_source = assets.get(M::shader());
-    // let shader = Shader::new(device, shader_source.as_ref());
+      let mesh = meshes.get(&instance.mesh).unwrap();
+      let material = materials.get(&instance.material).unwrap();
+      let shader_source = assets.get(M::shader());
+      let shader = Shader::new(device, shader_source.as_ref());
 
-    // // Create the pipeline layout for the mesh
-    // let pipeline_layout =
-    //   device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-    //     label: None,
-    //     bind_group_layouts: &[bind_group.layout(), material.bind_group().layout()],
-    //     push_constant_ranges: &[],
-    //   });
+      // Create the pipeline layout for the mesh
+      let pipeline_layout =
+        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+          label: None,
+          bind_group_layouts: &[
+            globals.layout(),
+            bind_group.layout(),
+            material.bind_group().layout(),
+          ],
+          push_constant_ranges: &[],
+        });
 
-    // // Create the vertex state
-    // let vertex = wgpu::VertexState {
-    //   entry_point: "vertex_main",
-    //   module: shader.inner(),
-    //   buffers: &[Vertex::buffer_layout()],
-    //   compilation_options: wgpu::PipelineCompilationOptions::default(),
-    // };
+      // Create the vertex state
+      let vertex = wgpu::VertexState {
+        entry_point: "vertex_main",
+        module: shader.inner(),
+        buffers: &[Vertex::buffer_layout()],
+        compilation_options: wgpu::PipelineCompilationOptions::default(),
+      };
 
-    // // Create the targets for the fragment
-    // // TODO: Should most likely be configurable in a material description?
-    // let targets = [Some(wgpu::ColorTargetState {
-    //   format: *surface.get_capabilities(adapter).formats.first().unwrap(),
-    //   blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-    //   write_mask: wgpu::ColorWrites::ALL,
-    // })];
+      // Create the targets for the fragment
+      // TODO: Should most likely be configurable in a material description?
+      let targets = [Some(wgpu::ColorTargetState {
+        format: *surface.get_capabilities(adapter).formats.first().unwrap(),
+        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+        write_mask: wgpu::ColorWrites::ALL,
+      })];
 
-    // // Create the fragment state
-    // let fragment = Some(wgpu::FragmentState {
-    //   entry_point: "fragment_main",
-    //   module: shader.inner(),
-    //   targets: &targets,
-    //   compilation_options: wgpu::PipelineCompilationOptions::default(),
-    // });
+      // Create the fragment state
+      let fragment = Some(wgpu::FragmentState {
+        entry_point: "fragment_main",
+        module: shader.inner(),
+        targets: &targets,
+        compilation_options: wgpu::PipelineCompilationOptions::default(),
+      });
 
-    // // Create the render pipeline using the layout and the material
-    // let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-    //   label: None,
-    //   layout: Some(&pipeline_layout),
-    //   vertex,
-    //   fragment,
-    //   multiview: None,
-    //   depth_stencil: None,
-    //   cache: None,
-    //   primitive: wgpu::PrimitiveState::default(),
-    //   multisample: wgpu::MultisampleState::default(),
-    // });
+      // Create the render pipeline using the layout and the material
+      let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: None,
+        layout: Some(&pipeline_layout),
+        vertex,
+        fragment,
+        multiview: None,
+        depth_stencil: None,
+        cache: None,
+        primitive: wgpu::PrimitiveState::default(),
+        multisample: wgpu::MultisampleState::default(),
+      });
+
+      // TODO: Must store the pipeline and bind group for actual rendering.
+      mesh_instances.push(GPUMesh {
+        pipeline,
+        mesh: instance.mesh,
+        material: instance.material,
+        transform_uniform,
+        bind_group,
+
+        vertex_buffer: Buffer::new_with_data(
+          device,
+          wgpu::BufferUsages::VERTEX,
+          &mesh.vertices,
+        ),
+
+        index_buffer: Buffer::new_with_data(
+          device,
+          wgpu::BufferUsages::INDEX,
+          &mesh.indices,
+        ),
+      });
+    }
+  }
+
+  /// Renders a frame using the rendering context.
+  ///
+  /// # Arguments
+  ///
+  /// * `ctx` - The rendering context to render the frame.
+  pub fn render(
+    ctx: Res<RenderContext>,
+    materials: Res<Resources<M>>,
+    mesh_instances: Res<GPUMeshInstances<M>>,
+    globals: Res<GlobalBindGroup>,
+  ) {
+    let mut frame = RenderFrame::new(ctx.device(), ctx.surface());
+
+    frame.clear(wgpu::Color {
+      r: 0.0,
+      g: 0.9,
+      b: 0.0,
+      a: 1.0,
+    });
+
+    let mut render_pass = frame.create_render_pass();
+
+    for instance in mesh_instances.iter() {
+      let material = materials.get(&instance.material).unwrap();
+
+      // Prepare the shader program
+      render_pass.inner.set_pipeline(&instance.pipeline);
+      render_pass.inner.set_bind_group(0, globals.get(), &[]);
+      render_pass
+        .inner
+        .set_bind_group(1, instance.bind_group.get(), &[]);
+      render_pass
+        .inner
+        .set_bind_group(2, material.bind_group().get(), &[]);
+
+      // Draw the geometry
+      render_pass
+        .inner
+        .set_vertex_buffer(0, instance.vertex_buffer.inner().slice(..));
+      render_pass.inner.set_index_buffer(
+        instance.index_buffer.inner().slice(..),
+        wgpu::IndexFormat::Uint16,
+      );
+
+      render_pass
+        .inner
+        .draw_indexed(0..instance.index_buffer.len() as u32, 0, 0..1);
+    }
+
+    render_pass.finish();
+
+    frame.finish(ctx.queue());
   }
 }
 
@@ -231,8 +330,7 @@ pub struct DefaultMaterials;
 
 impl Module for DefaultMaterials {
   fn build(&self, app: &mut App) {
-    app
-      .add_module(MaterialModule::<ColorMaterial>::default())
-      .add_module(MaterialModule::<TextureMaterial>::default());
+    app.add_module(MaterialModule::<ColorMaterial>::default());
+    // .add_module(MaterialModule::<TextureMaterial>::default());
   }
 }

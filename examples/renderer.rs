@@ -26,8 +26,8 @@ pub fn init(
   mut materials: ResMut<Resources<ColorMaterial>>,
 ) {
   commands.spawn(MeshInstance {
-    mesh: meshes.add(Rectangle::new(0.5, 10.0)),
-    material: materials.add(ColorMaterial::new(ctx.device(), 1.0, 0.0, 0.0)),
+    mesh: meshes.add(Rectangle::new(0.5, 0.5)),
+    material: materials.add(ColorMaterial::new(ctx.device(), 0.0, 0.0, 1.0)),
     transform: Transform::default(),
   });
 }

@@ -6,7 +6,7 @@
 - [Scheduler](./scheduler.md)
 - [App](./app.md)
 - [Modules](./modules.md)
-- [Events](./scheduler.md)
+- [Events](./events.md)
 
 ## Rendering
 
