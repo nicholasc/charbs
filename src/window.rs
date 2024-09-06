@@ -49,7 +49,7 @@ impl WindowModule {
 }
 
 impl Module for WindowModule {
-  fn build(&self, app: &mut App) {
+  fn configure(&self, app: &mut App) {
     app.set_runner(Self::runner);
   }
 }

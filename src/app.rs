@@ -65,6 +65,7 @@ impl Default for App {
 
 impl App {
   /// Runs the application using the provided runner function.
+  #[inline]
   pub fn run(&mut self) {
     // Take ownership of the runner function and the application.
     let runner = std::mem::replace(&mut self.runner, default_runner);
@@ -84,6 +85,9 @@ impl App {
   /// # Arguments
   ///
   /// * `runner` - The new runner function to be used by the application.
+  ///
+  /// * `->` - A mutable reference to the [`App`].
+  #[inline]
   pub(crate) fn set_runner(&mut self, runner: RunnerFn) -> &mut Self {
     self.runner = runner;
 
@@ -96,15 +100,14 @@ impl App {
   /// # Arguments
   ///
   /// * `label` - The schedule label to run.
+  #[inline]
   pub(crate) fn run_schedule<R: ScheduleLabel + 'static>(&self, label: R) {
     if let Ok(mut scheduler) = self.scheduler.try_lock() {
       if let Ok(mut state) = self.state.try_lock() {
         scheduler.run(label, &mut state);
 
-        // Take the state from the commands structure
+        // Take the state from the commands structure and merge the new state into the existing state.
         let mut new_state = std::mem::take(&mut state.get::<ResMut<Commands>>().state);
-
-        // Merge the new state into the existing state.
         state.merge(&mut new_state);
       }
     }
@@ -114,6 +117,7 @@ impl App {
   ///
   /// Execute all commands queued in the [`Commands`] struct and reset the
   /// [`EventBus`] for the next iteration.
+  #[inline]
   pub(crate) fn run_post_loop(&mut self) {
     // Reset the event bus.
     if let Ok(state) = self.state.try_lock() {
@@ -130,6 +134,7 @@ impl App {
   /// * `handler` - The [`Handler`] to add to the schedule.
   ///
   /// * `->` - A mutable reference to the [`App`].
+  #[inline]
   pub fn add_handler<R: ScheduleLabel + 'static, I, S: Handler + 'static>(
     &mut self,
     label: R,
@@ -149,6 +154,7 @@ impl App {
   /// * `structure` - The object to add to the [`State`].
   ///
   /// * `->` - A mutable reference to the [`App`].
+  #[inline]
   pub fn add_state<R: 'static>(&mut self, structure: R) -> &mut Self {
     if let Ok(mut state) = self.state.try_lock() {
       state.add(structure);
@@ -164,8 +170,10 @@ impl App {
   /// * `module` - The [`Module`] to add to the application.
   ///
   /// * `->` - A mutable reference to the [`App`].
+  #[inline]
   pub fn add_module(&mut self, module: impl Module) -> &mut Self {
-    module.build(self);
+    module.configure(self);
+
     self
   }
 }
@@ -174,14 +182,18 @@ impl App {
 pub trait Module {
   /// Builds module dependencies into the application.
   ///
-  /// TODO: Change to configure
-  ///
   /// # Arguments
   ///
   /// * `app` - A mutable reference to the [`App`].
-  fn build(&self, app: &mut App);
+  fn configure(&self, app: &mut App);
 }
 
+/// A structure to store application-specific commands that should be executed
+/// at the end of a schedule.
+///
+/// Because schedules execution locks the application's state, we use a separate
+/// structure to store these in the form of commands. Once the schedule execution is
+/// completed, the commands are executed and reflected onto the application's state.
 #[derive(Default)]
 pub struct Commands {
   state: State,
@@ -195,17 +207,26 @@ impl Commands {
   /// * `object` - The object to add to the [`State`].
   ///
   /// * `->` - A mutable reference to the [`Commands`].
+  #[inline]
   pub fn add_state<R: 'static>(&mut self, structure: R) -> &mut Self {
     self.state.add(structure);
 
     self
   }
 
+  /// Spawns a mesh instance with a specific material.
+  ///
+  /// # Arguments
+  ///
+  /// * `instance` - The mesh instance to spawn.
+  #[inline]
   pub fn spawn<M: Material>(&mut self, instance: MeshInstance<M>) {
+    // Add a mesh to spawn container to state if there is none.
     if !self.state.has::<MeshInstancesToSpawn<M>>() {
       self.state.add(MeshInstancesToSpawn::<M>::default());
     }
 
+    // Push the instance into the state.
     self
       .state
       .get::<ResMut<MeshInstancesToSpawn<M>>>()

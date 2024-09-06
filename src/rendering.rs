@@ -231,7 +231,7 @@ impl<'a> RenderPass<'a> {
 pub struct RenderModule;
 
 impl Module for RenderModule {
-  fn build(&self, app: &mut App) {
+  fn configure(&self, app: &mut App) {
     app
       .add_handler(PreInit, Self::pre_init)
       .add_handler(BeginRender, Self::begin_render)

@@ -16,7 +16,7 @@ pub(crate) type GlobalBindGroup = BindGroup;
 pub struct RendererModule;
 
 impl Module for RendererModule {
-  fn build(&self, app: &mut App) {
+  fn configure(&self, app: &mut App) {
     app
       .add_state(Resources::<Mesh>::default())
       .add_handler(Init, Self::init)

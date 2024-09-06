@@ -159,7 +159,7 @@ impl<M: Material> Default for MaterialModule<M> {
 }
 
 impl<M: Material> Module for MaterialModule<M> {
-  fn build(&self, app: &mut App) {
+  fn configure(&self, app: &mut App) {
     app
       .add_state(Resources::<M>::default())
       .add_state(MeshInstancesToSpawn::<M>::default())
@@ -318,7 +318,7 @@ impl<M: Material> MaterialModule<M> {
 pub struct DefaultMaterials;
 
 impl Module for DefaultMaterials {
-  fn build(&self, app: &mut App) {
+  fn configure(&self, app: &mut App) {
     app
       .add_module(MaterialModule::<ColorMaterial>::default())
       .add_module(MaterialModule::<TextureMaterial>::default());
