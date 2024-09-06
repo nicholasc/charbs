@@ -17,6 +17,12 @@ use winit::{
 #[derive(ScheduleLabel)]
 pub(crate) struct Render;
 
+#[derive(ScheduleLabel)]
+pub(crate) struct BeginRender;
+
+#[derive(ScheduleLabel)]
+pub(crate) struct EndRender;
+
 /// An event that represents when the window is resized.
 #[derive(Event)]
 pub struct WindowResized {
@@ -151,7 +157,10 @@ impl ApplicationHandler<()> for WindowApp {
         self.app.run_schedule(Update);
 
         // Run the application redraw schedule
+        // TODO: This should be done in a sub system
+        self.app.run_schedule(BeginRender);
         self.app.run_schedule(Render);
+        self.app.run_schedule(EndRender);
 
         // Run the post-loop logic
         self.app.run_post_loop();

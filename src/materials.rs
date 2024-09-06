@@ -6,7 +6,6 @@ use crate::{
   mesh::{GPUMesh, Mesh, MeshInstance, Vertex},
   prelude::RenderContext,
   renderer::GlobalBindGroup,
-  rendering::RenderFrame,
   resources::Resources,
   shader::Shader,
   state::{Res, ResMut},
@@ -274,21 +273,16 @@ impl<M: Material> MaterialModule<M> {
   ///
   /// * `ctx` - The rendering context to render the frame.
   fn render(
-    ctx: Res<RenderContext>,
+    mut ctx: ResMut<RenderContext>,
     materials: Res<Resources<M>>,
     mesh_instances: Res<GPUMeshInstances<M>>,
     globals: Res<GlobalBindGroup>,
   ) {
-    let mut frame = RenderFrame::new(ctx.device(), ctx.surface());
+    if mesh_instances.is_empty() {
+      return;
+    }
 
-    frame.clear(wgpu::Color {
-      r: 0.0,
-      g: 0.9,
-      b: 0.0,
-      a: 1.0,
-    });
-
-    let mut render_pass = frame.create_render_pass();
+    let mut render_pass = ctx.current_frame_mut().create_render_pass();
 
     for instance in mesh_instances.iter() {
       let material = materials.get(&instance.material).unwrap();
@@ -318,8 +312,6 @@ impl<M: Material> MaterialModule<M> {
     }
 
     render_pass.finish();
-
-    frame.finish(ctx.queue());
   }
 }
 
@@ -327,7 +319,8 @@ pub struct DefaultMaterials;
 
 impl Module for DefaultMaterials {
   fn build(&self, app: &mut App) {
-    app.add_module(MaterialModule::<ColorMaterial>::default());
-    // .add_module(MaterialModule::<TextureMaterial>::default());
+    app
+      .add_module(MaterialModule::<ColorMaterial>::default())
+      .add_module(MaterialModule::<TextureMaterial>::default());
   }
 }

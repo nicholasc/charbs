@@ -1,7 +1,7 @@
 use crate::{
   app::{App, Commands, Module, PreInit},
   state::{Res, ResMut},
-  window::Window,
+  window::{BeginRender, EndRender, Window},
 };
 
 /// A structure holding wgpu related structures for usage within the library.
@@ -16,6 +16,8 @@ pub struct RenderContext {
   device: wgpu::Device,
   queue: wgpu::Queue,
   surface: wgpu::Surface<'static>,
+
+  current_frame: Option<RenderFrame>,
 }
 
 impl RenderContext {
@@ -41,6 +43,8 @@ impl RenderContext {
       device,
       queue,
       surface,
+
+      current_frame: None,
     }
   }
 
@@ -79,9 +83,31 @@ impl RenderContext {
   pub fn surface(&self) -> &wgpu::Surface {
     &self.surface
   }
+
+  pub fn begin_frame(&mut self) -> &mut RenderFrame {
+    self.end_frame();
+
+    self.current_frame = Some(RenderFrame::new(&self.device, &self.surface));
+    self.current_frame.as_mut().unwrap()
+  }
+
+  pub fn current_frame(&self) -> &RenderFrame {
+    self.current_frame.as_ref().unwrap()
+  }
+
+  pub fn current_frame_mut(&mut self) -> &mut RenderFrame {
+    self.current_frame.as_mut().unwrap()
+  }
+
+  pub fn end_frame(&mut self) {
+    if let Some(frame) = self.current_frame.take() {
+      frame.finish(&self.queue);
+    }
+  }
 }
 
 /// A wrapper structure that represents a single frame to be renderered.
+#[derive(Debug)]
 pub struct RenderFrame {
   encoder: wgpu::CommandEncoder,
   view: wgpu::TextureView,
@@ -206,7 +232,10 @@ pub struct RenderModule;
 
 impl Module for RenderModule {
   fn build(&self, app: &mut App) {
-    app.add_handler(PreInit, Self::pre_init);
+    app
+      .add_handler(PreInit, Self::pre_init)
+      .add_handler(BeginRender, Self::begin_render)
+      .add_handler(EndRender, Self::end_render);
   }
 }
 
@@ -217,7 +246,7 @@ impl RenderModule {
   ///
   /// * `commands` - A mutable reference to the [`Commands`] dispatcher.
   /// * `window` - The [`Window`] struct representing the main window.
-  pub fn pre_init(mut commands: ResMut<Commands>, window: Res<Window>) {
+  fn pre_init(mut commands: ResMut<Commands>, window: Res<Window>) {
     // Create a new instance of a wgpu instance to create our surface from the
     // newly created window and the adapter that will be used to create our
     // rendering context
@@ -261,5 +290,20 @@ impl RenderModule {
 
     // Store in the internal state
     commands.add_state(ctx);
+  }
+
+  fn begin_render(mut ctx: ResMut<RenderContext>) {
+    let frame = ctx.begin_frame();
+
+    frame.clear(wgpu::Color {
+      r: 0.0,
+      g: 0.0,
+      b: 0.0,
+      a: 1.0,
+    });
+  }
+
+  fn end_render(mut ctx: ResMut<RenderContext>) {
+    ctx.end_frame();
   }
 }
