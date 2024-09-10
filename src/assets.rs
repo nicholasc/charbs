@@ -1,10 +1,16 @@
 use std::collections::HashMap;
 
+/// A structure to represent an asset.
+///
+/// At the core, an asset is a byte array but the structure also provides
+/// methods to convert it to different formats. Asset can also be extended from
+/// the outside to provide more possible conversions.
 #[derive(Default)]
 pub struct Asset {
-  pub data: Vec<u8>,
+  data: Vec<u8>,
 }
 
+/// Implement the `AsRef<str>` trait for the [`Asset`] struct.
 impl AsRef<str> for Asset {
   fn as_ref(&self) -> &str {
     std::str::from_utf8(&self.data).unwrap()
